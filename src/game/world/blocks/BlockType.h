@@ -5,9 +5,10 @@
 #ifndef MINECRAFT_BLOCKTYPE_H
 #define MINECRAFT_BLOCKTYPE_H
 
-enum BlockType {
-    AIR,
-    GRASS
+enum BlockType: uint8_t {
+    AIR = 0,
+    GRASS,
+    DIRT,
 };
 
 #endif //MINECRAFT_BLOCKTYPE_H

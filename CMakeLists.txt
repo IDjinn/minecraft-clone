@@ -17,6 +17,10 @@ add_executable(minecraft
         src/game/players/Player.h
         src/game/world/blocks/Block.cpp
         src/game/world/blocks/Block.h
+        src/game/world/WorldConstants.h
+        src/game/world/generation/WorldGenerator.cpp
+        src/game/world/generation/WorldGenerator.h
+        src/utils/Assert.h
 )
 
 target_include_directories(minecraft PRIVATE

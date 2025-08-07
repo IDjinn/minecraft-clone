@@ -13,6 +13,8 @@
 
 #include "game/world/blocks/Block.h"
 #include "game/world/blocks/BlockType.h"
+#include "game/world/chunks/Chunk.h"
+#include "game/world/generation/WorldGenerator.h"
 
 #define WIDTH 1920
 #define HEIGHT 1024
@@ -52,7 +54,6 @@ auto fragmentShaderSource = R"glsl(
         FragColor = texture(texture1, TexCoord);
     }
 )glsl";
-
 
 
 float deltaTime = 0.0f;
@@ -110,19 +111,7 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    Block world[10][10][10] = {};
-    for (int x = 0; x < 10; x++) {
-        for (int y = 0; y < 10; y++) {
-            for (int z = 0; z < 10; z++) {
-                world[x][y][z] = Block(
-                    x,
-                    y,
-                    z,
-                    GRASS
-                );
-            }
-        }
-    }
+    auto world = WorldGenerator::generateWorld();
 
 
     constexpr float cubeVertices[] = {
@@ -227,96 +216,96 @@ int main() {
     const float faceVertices[6][30] = {
         // front face (z+) - posição + tex coords
         {
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f
         },
         // back face (z-)
         {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f
         },
         // left face (x-)
         {
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+            -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f
         },
         // right face (x+)
         {
-             0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  0.0f, 1.0f
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+            0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f
         },
         // top face (y+)
         {
-            -0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 0.0f
+            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+            0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f
         },
         // bottom face (y-)
         {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+            0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f
         }
     };
 
     const int directions[6][3] = {
-        {0, 0, 1},   // front
-        {0, 0, -1},  // back
-        {-1, 0, 0},  // left
-        {1, 0, 0},   // right
-        {0, 1, 0},   // top
-        {0, -1, 0}   // bottom
+        {0, 0, 1}, // front
+        {0, 0, -1}, // back
+        {-1, 0, 0}, // left
+        {1, 0, 0}, // right
+        {0, 1, 0}, // top
+        {0, -1, 0} // bottom
     };
 
     auto isSolid = [&](const int x, const int y, const int z) {
-        return x >= 0 && x < 10 && y >= 0 && y < 10 && z >= 0 && z < 10 && world[x][y][z].blockType != AIR;
+        if (World::isOutOfBounds(x, y, z)) return false;
+
+
+        return x >= 0 && x < 10 && y >= 0 && y < 10 && z >= 0 && z < 10;
     };
 
     std::vector<float> visibleVertices;
-    for (auto &x : world) {
-        for (auto &y : x) {
-            for (auto &z : y) {
-                auto block = &z;
-                if (block->blockType == AIR) continue;
+    for (auto chunk: world->chunks) {
+        for (auto block: chunk.blocks) {
+            if (block.block_type() == AIR) continue;
 
-                for (int face = 0; face < 6; ++face) {
-                    auto nx = block->x + directions[face][0];
-                    auto ny = block->y + directions[face][1];
-                    auto nz = block->z + directions[face][2];
+            for (int face = 0; face < 6; ++face) {
+                auto nx = block.x() + directions[face][0];
+                auto ny = block.y() + directions[face][1];
+                auto nz = block.z() + directions[face][2];
 
-                    if (isSolid(nx, ny, nz)) continue;
+                if (isSolid(nx, ny, nz)) continue;
 
-                    for (int i = 0; i < 30; i += 5) {
-                        float vx = faceVertices[face][i] + static_cast<float>(block->x);
-                        float vy = faceVertices[face][i + 1] + static_cast<float>(block->y);
-                        float vz = faceVertices[face][i + 2] + static_cast<float>(block->z);
-                        float u = faceVertices[face][i + 3];
-                        float v = faceVertices[face][i + 4];
+                for (int i = 0; i < 30; i += 5) {
+                    float vx = faceVertices[face][i] + static_cast<float>(block.x());
+                    float vy = faceVertices[face][i + 1] + static_cast<float>(block.y());
+                    float vz = faceVertices[face][i + 2] + static_cast<float>(block.z());
+                    float u = faceVertices[face][i + 3];
+                    float v = faceVertices[face][i + 4];
 
-                        visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
-                    }
+                    visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
                 }
             }
         }
@@ -331,10 +320,10 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, visibleVBO);
     glBufferData(GL_ARRAY_BUFFER, visibleVertices.size() * sizeof(float), visibleVertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void*>(0));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(0));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);

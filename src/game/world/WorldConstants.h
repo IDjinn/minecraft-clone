@@ -1,0 +1,16 @@
+//
+// Created by Luke on 07/08/2025.
+//
+
+#ifndef MINECRAFT_WORLDCONSTANTS_H
+#define MINECRAFT_WORLDCONSTANTS_H
+
+#define WORLD_SIZE_X 4
+#define WORLD_SIZE_Y 4
+#define WORLD_SIZE_Z 4
+
+#define CHUNK_SIZE 64
+
+#define OVERWORLD 0
+
+#endif //MINECRAFT_WORLDCONSTANTS_H

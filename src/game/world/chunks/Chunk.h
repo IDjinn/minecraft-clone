@@ -8,21 +8,25 @@
 #include <memory>
 
 #include "../blocks/Block.h"
+#include "../WorldConstants.h"
 
-#define CHUNK_SIZE 64
-
-class Chunk {
-public:
+struct Chunk {
     uint64_t id;
-    std::array<std::unique_ptr<Block>,CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE> blocks = {};
+    std::array<Block, CHUNK_SIZE * CHUNK_SIZE> blocks{};
 
-    static constexpr int index(const int x, const int y, const int z) {
+    [[nodiscard]] Block getBlock(const int x, const int y, const int z) const {
+        return blocks[block_index(x, y, z)];
+    }
+
+    void setIndex(uint8_t chunk_index);
+
+    static constexpr int block_index(const int x, const int y, const int z) {
         return x + CHUNK_SIZE * (y + CHUNK_SIZE * z);
     }
 
-    [[nodiscard]] std::shared_ptr<Block> getBlock(const int x, const int y, const int z) const {
-        return std::shared_ptr<Block>(blocks[index(x, y, z)].get());
-    }
+    void setBlock(int x, int y, int z, Block block);
+
+    void setBlock(int index, Block block);
 };
 
 

@@ -6,23 +6,26 @@
 #define MINECRAFT_BLOCK_H
 #include <cstdint>
 
-#include "BlockType.h"
-
-struct Block {
-    uint8_t x;
-    uint8_t y;
-    uint8_t z;
-
+class Block {
+    uint8_t i;
     uint8_t blockType;
 
+public:
     Block() = default;
 
-    Block(const int x, const int y, const int z, const BlockType blockType) {
-        this->x = x;
-        this->y = y;
-        this->z = z;
-        this->blockType = blockType;
-    }
+    void setIndex(uint64_t index);
+
+    void setBlockType(uint8_t type);
+
+    [[nodiscard]] uint8_t index() const;
+
+    [[nodiscard]] uint8_t block_type() const;
+
+    [[nodiscard]] uint8_t x() const;
+
+    [[nodiscard]] uint8_t y() const;
+
+    [[nodiscard]] uint8_t z() const;
 };
 
 #endif //MINECRAFT_BLOCK_H
