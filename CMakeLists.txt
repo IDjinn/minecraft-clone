@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(minecraft
         src/main.cpp
         src/glad.c
+        include/stb_image/stb_image.h
 )
 
 target_include_directories(minecraft PRIVATE
@@ -23,3 +24,5 @@ target_link_libraries(minecraft
 target_include_directories(minecraft PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 target_compile_options(minecraft PRIVATE -Wall -Wextra -pedantic)
+
+set_property(TARGET minecraft PROPERTY DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

@@ -1,3 +1,6 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image/stb_image.h"
+
 #include <cmath>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -21,14 +24,16 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, const int wi
 const char *vertexShaderSource = R"glsl(
     #version 330 core
     layout(location = 0) in vec3 aPos;
-    layout(location = 1) in vec3 instancePos;
+    layout(location = 1) in vec2 aTexCoord;
 
     uniform mat4 view;
     uniform mat4 projection;
 
+    out vec2 TexCoord;
+
     void main() {
-        vec4 worldPosition = vec4(aPos + instancePos, 1.0);
-        gl_Position = projection * view * worldPosition;
+        gl_Position = projection * view * vec4(aPos, 1.0);
+        TexCoord = aTexCoord;
     }
 )glsl";
 
@@ -37,10 +42,11 @@ const char *fragmentShaderSource = R"glsl(
     #version 330 core
     out vec4 FragColor;
 
-    uniform vec4 inputColor;
+    in vec2 TexCoord;
+    uniform sampler2D texture1;
 
     void main() {
-        FragColor = inputColor;
+        FragColor = texture(texture1, TexCoord);
     }
 )glsl";
 
@@ -74,6 +80,19 @@ void scroll_callback(GLFWwindow *window, [[maybe_unused]] double xoffset, const 
     // xoffset is not used here (we will use mouse scroll)
     mouse_scroll_y_offset = static_cast<int>(yoffset);
     mouse_scroll_drag = SCROLL_DRAG;
+}
+
+void load_texture(const std::string& texture_name) {
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(("assets/" + texture_name).c_str(), &width, &height, &nrChannels, 0);
+    if (data) {
+        GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cerr << "Failed to load texture " << texture_name << std::endl;
+    }
+    stbi_image_free(data);
 }
 
 int main() {
@@ -122,54 +141,64 @@ int main() {
     constexpr float cubeVertices[] = {
         // positions
         // front face
-        -0.5f, -0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f,
-        0.5f, 0.5f, 0.5f,
-        0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f, 0.5f,
-        -0.5f, -0.5f, 0.5f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
 
         // back face
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, 0.5f, -0.5f,
-        0.5f, 0.5f, -0.5f,
-        0.5f, 0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
 
         // left face
-        -0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, 0.5f,
-        -0.5f, 0.5f, 0.5f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
 
         // right face
-        0.5f, 0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, 0.5f, -0.5f,
-        0.5f, 0.5f, 0.5f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
 
         // top face
-        -0.5f, 0.5f, -0.5f,
-        -0.5f, 0.5f, 0.5f,
-        0.5f, 0.5f, 0.5f,
-        0.5f, 0.5f, 0.5f,
-        0.5f, 0.5f, -0.5f,
-        -0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
 
         // bottom face
-        -0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f,
-        -0.5f, -0.5f, 0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
     };
 
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    load_texture("grass.png");
 
     const unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
@@ -192,12 +221,14 @@ int main() {
     glGenBuffers(1, &VBO);
 
     glBindVertexArray(VAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(nullptr));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -261,15 +292,15 @@ int main() {
                 if (block->blockType == AIR) continue;
 
                 for (int face = 0; face < 6; ++face) {
-                    auto neighboor_x = block->x + directions[face][0];
-                    auto neighboor_y = block->y + directions[face][1];
-                    auto neighboor_z = block->z + directions[face][2];
-                    if (isSolid(neighboor_x, neighboor_y, neighboor_z)) continue;
+                    auto nx = block->x + directions[face][0];
+                    auto nt = block->y + directions[face][1];
+                    auto nz = block->z + directions[face][2];
+                    if (isSolid(nx, nt, nz)) continue;
 
                     for (int i = 0; i < 18; i += 3) {
-                        float vx = faceVertices[face][i] + block->x;
-                        float vy = faceVertices[face][i + 1] + block->y;
-                        float vz = faceVertices[face][i + 2] + block->z;
+                        float vx = faceVertices[face][i] + static_cast<float>(block->x);
+                        float vy = faceVertices[face][i + 1] + static_cast<float>(block->y);
+                        float vz = faceVertices[face][i + 2] + static_cast<float>(block->z);
                         visibleVertices.insert(visibleVertices.end(), {vx, vy, vz});
                     }
                 }
@@ -278,22 +309,27 @@ int main() {
     }
 
 
-    unsigned int visibleVBO;
+    unsigned int visibleVAO, visibleVBO;
+    glGenVertexArrays(1, &visibleVAO);
     glGenBuffers(1, &visibleVBO);
 
-    glBindVertexArray(VAO);
+    glBindVertexArray(visibleVAO);
     glBindBuffer(GL_ARRAY_BUFFER, visibleVBO);
     glBufferData(GL_ARRAY_BUFFER, visibleVertices.size() * sizeof(glm::vec3), visibleVertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0);
 
+    glEnable(GL_DEPTH_TEST);
 
     auto cameraPos = glm::vec3(11, 6, 11);
     auto draw_line = false;
     while (!glfwWindowShouldClose(window)) {
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         if (mouse_scroll_drag > 0) {
             float offset = mouse_scroll_y_offset > 0 ? -(SCROLL_VELOCITY) : SCROLL_VELOCITY;
             mouse_scroll_drag -= CAMERA_VELOCITY;
@@ -317,11 +353,7 @@ int main() {
 
         glPolygonMode(GL_FRONT_AND_BACK, draw_line ? GL_LINE : GL_FILL);
 
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glUseProgram(shaderProgram);
-        glEnable(GL_DEPTH_TEST);
 
         auto target = glm::vec3(0.0f, 0.0f, 0.0f);
         auto cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -335,11 +367,10 @@ int main() {
         const auto projLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        const int colorLocation = glGetUniformLocation(shaderProgram, "inputColor");
-        glUniform4f(colorLocation, 0, 1, 0, 1.0f);
-
-        glBindVertexArray(VAO);
+        glBindVertexArray(visibleVAO);
         glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
+        glBindVertexArray(0);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
