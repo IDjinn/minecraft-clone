@@ -11,6 +11,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "game/world/blocks/Block.h"
+#include "game/world/blocks/BlockType.h"
+
 #define WIDTH 1920
 #define HEIGHT 1024
 
@@ -21,7 +24,7 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, const int wi
     glViewport(0, 0, width, height);
 }
 
-const char *vertexShaderSource = R"glsl(
+auto vertexShaderSource = R"glsl(
     #version 330 core
     layout(location = 0) in vec3 aPos;
     layout(location = 1) in vec2 aTexCoord;
@@ -38,7 +41,7 @@ const char *vertexShaderSource = R"glsl(
 )glsl";
 
 
-const char *fragmentShaderSource = R"glsl(
+auto fragmentShaderSource = R"glsl(
     #version 330 core
     out vec4 FragColor;
 
@@ -50,27 +53,6 @@ const char *fragmentShaderSource = R"glsl(
     }
 )glsl";
 
-enum BlockType {
-    AIR,
-    GRASS
-};
-
-struct Block {
-    uint8_t x;
-    uint8_t y;
-    uint8_t z;
-
-    uint8_t blockType;
-
-    Block() = default;
-
-    Block(const int x, const int y, const int z, const BlockType blockType) {
-        this->x = x;
-        this->y = y;
-        this->z = z;
-        this->blockType = blockType;
-    }
-};
 
 
 float deltaTime = 0.0f;
@@ -359,21 +341,17 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
-    static bool d_pressed = false;
-
-    glm::vec3 worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
+    auto worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
     bool draw_line = false;
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float currentFrame = static_cast<float>(glfwGetTime());
+        auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Movimentação da câmera com WASD
         float cameraSpeed = CAMERA_SPEED * deltaTime;
-
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             cameraAngleY += cameraSpeed * 0.5f;
         }

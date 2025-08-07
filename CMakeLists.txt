@@ -7,6 +7,16 @@ add_executable(minecraft
         src/main.cpp
         src/glad.c
         include/stb_image/stb_image.h
+        src/game/world/World.cpp
+        src/game/world/World.h
+        src/game/world/chunks/Chunk.cpp
+        src/game/world/chunks/Chunk.h
+        src/game/world/blocks/Block.h
+        src/game/world/blocks/BlockType.h
+        src/game/players/Player.cpp
+        src/game/players/Player.h
+        src/game/world/blocks/Block.cpp
+        src/game/world/blocks/Block.h
 )
 
 target_include_directories(minecraft PRIVATE
