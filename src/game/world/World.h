@@ -20,15 +20,14 @@ class World {
 
     std::array<std::array<Chunk, WORLD_SIZE_Y>, WORLD_SIZE_X> chunks = {};
 
-    const std::optional<Chunk&> getChunk(uint64_t id) {
-        for (auto& arr : chunks)
-            for (auto& chunk : arr)
+    const std::optional<Chunk &> getChunk(uint64_t id) {
+        for (auto &arr: chunks)
+            for (auto &chunk: arr)
                 if (chunk.id == id)
-                    return std::optional<Chunk&>(chunk);
+                    return std::optional<Chunk &>(chunk);
 
         return {};
     }
-
 };
 
 
