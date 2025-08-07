@@ -13,9 +13,9 @@
 
 #define WIDTH 1920
 #define HEIGHT 1024
-#define CAMERA_VELOCITY 0.001
-#define SCROLL_VELOCITY 0.006
-#define SCROLL_DRAG 2.34325f
+
+#define CAMERA_SPEED 5.0f
+#define ZOOM_SPEED 2.0f
 
 void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, const int width, const int height) {
     glViewport(0, 0, width, height);
@@ -73,16 +73,20 @@ struct Block {
 };
 
 
-int32_t mouse_scroll_y_offset = 0;
-float mouse_scroll_drag = 0;
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float cameraDistance = 15.0f;
+float cameraAngleX = 0.0f;
+float cameraAngleY = 0.0f;
 
-void scroll_callback(GLFWwindow *window, [[maybe_unused]] double xoffset, const double yoffset) {
-    // xoffset is not used here (we will use mouse scroll)
-    mouse_scroll_y_offset = static_cast<int>(yoffset);
-    mouse_scroll_drag = SCROLL_DRAG;
+void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, const double yoffset) {
+    cameraDistance -= static_cast<float>(yoffset) * ZOOM_SPEED;
+    if (cameraDistance < 2.0f) cameraDistance = 2.0f;
+    if (cameraDistance > 50.0f) cameraDistance = 50.0f;
 }
 
-void load_texture(const std::string& texture_name) {
+void load_texture(const std::string &texture_name) {
+    stbi_set_flip_vertically_on_load(1);
     int width, height, nrChannels;
     unsigned char *data = stbi_load(("assets/" + texture_name).c_str(), &width, &height, &nrChannels, 0);
     if (data) {
@@ -90,7 +94,8 @@ void load_texture(const std::string& texture_name) {
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cerr << "Failed to load texture " << texture_name << std::endl;
+        std::cerr << "Failed to load texture " << texture_name << " because " << stbi_failure_reason() << std::endl;
+        __debugbreak();
     }
     stbi_image_free(data);
 }
@@ -193,8 +198,8 @@ int main() {
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -233,75 +238,102 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    const float faceVertices[6][18] = {
-        // front (0, 0, +1)
-        {
-            -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f
-        },
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // back (0, 0, -1)
+    // Dados das faces com posição e coordenadas de textura
+    const float faceVertices[6][30] = {
+        // front face (z+) - posição + tex coords
         {
-            -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f
         },
-
-        // left (-1, 0, 0)
+        // back face (z-)
         {
-            -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f
         },
-
-        // right (1, 0, 0)
+        // left face (x-)
         {
-            0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f
         },
-
-        // up (0, 1, 0)
+        // right face (x+)
         {
-            -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f
+             0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f, 1.0f
         },
-
-        // down (0, -1, 0)
+        // top face (y+)
         {
-            -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f
+            -0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 0.0f
+        },
+        // bottom face (y-)
+        {
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f
         }
     };
 
     const int directions[6][3] = {
-        {0, 0, 1}, // front
-        {0, 0, -1}, // back
-        {-1, 0, 0}, // left
-        {1, 0, 0}, // right
-        {0, 1, 0}, // top
-        {0, -1, 0} // bottom
+        {0, 0, 1},   // front
+        {0, 0, -1},  // back
+        {-1, 0, 0},  // left
+        {1, 0, 0},   // right
+        {0, 1, 0},   // top
+        {0, -1, 0}   // bottom
     };
 
     auto isSolid = [&](const int x, const int y, const int z) {
         return x >= 0 && x < 10 && y >= 0 && y < 10 && z >= 0 && z < 10 && world[x][y][z].blockType != AIR;
     };
 
-    std::vector<glm::vec3> visibleVertices{};
-    for (auto &x: world) {
-        for (auto &y: x) {
-            for (auto &z: y) {
+    std::vector<float> visibleVertices;
+    for (auto &x : world) {
+        for (auto &y : x) {
+            for (auto &z : y) {
                 auto block = &z;
                 if (block->blockType == AIR) continue;
 
                 for (int face = 0; face < 6; ++face) {
                     auto nx = block->x + directions[face][0];
-                    auto nt = block->y + directions[face][1];
+                    auto ny = block->y + directions[face][1];
                     auto nz = block->z + directions[face][2];
-                    if (isSolid(nx, nt, nz)) continue;
 
-                    for (int i = 0; i < 18; i += 3) {
+                    if (isSolid(nx, ny, nz)) continue;
+
+                    for (int i = 0; i < 30; i += 5) {
                         float vx = faceVertices[face][i] + static_cast<float>(block->x);
                         float vy = faceVertices[face][i + 1] + static_cast<float>(block->y);
                         float vz = faceVertices[face][i + 2] + static_cast<float>(block->z);
-                        visibleVertices.insert(visibleVertices.end(), {vx, vy, vz});
+                        float u = faceVertices[face][i + 3];
+                        float v = faceVertices[face][i + 4];
+
+                        visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
                     }
                 }
             }
@@ -315,46 +347,81 @@ int main() {
 
     glBindVertexArray(visibleVAO);
     glBindBuffer(GL_ARRAY_BUFFER, visibleVBO);
-    glBufferData(GL_ARRAY_BUFFER, visibleVertices.size() * sizeof(glm::vec3), visibleVertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, visibleVertices.size() * sizeof(float), visibleVertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), static_cast<void *>(nullptr));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void*>(0));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
 
     glEnable(GL_DEPTH_TEST);
 
-    auto cameraPos = glm::vec3(11, 6, 11);
-    auto draw_line = false;
+    static bool d_pressed = false;
+
+    glm::vec3 worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
+    bool draw_line = false;
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (mouse_scroll_drag > 0) {
-            float offset = mouse_scroll_y_offset > 0 ? -(SCROLL_VELOCITY) : SCROLL_VELOCITY;
-            mouse_scroll_drag -= CAMERA_VELOCITY;
-            cameraPos += glm::vec3(offset, offset, 0);
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // Movimentação da câmera com WASD
+        float cameraSpeed = CAMERA_SPEED * deltaTime;
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            cameraAngleY += cameraSpeed * 0.5f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            cameraAngleY -= cameraSpeed * 0.5f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            cameraAngleX -= cameraSpeed * 0.5f;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            draw_line = !draw_line;
+            cameraAngleX += cameraSpeed * 0.5f;
         }
+
         if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            cameraPos += glm::vec3(0, CAMERA_VELOCITY, 0);
+            worldCenter.y += cameraSpeed;
         }
         if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            cameraPos += glm::vec3(0, -(CAMERA_VELOCITY), 0);
+            worldCenter.y -= cameraSpeed;
         }
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            cameraPos += glm::vec3(CAMERA_VELOCITY, 0, 0);
+            worldCenter.x -= cameraSpeed;
         }
         if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            cameraPos += glm::vec3(-(CAMERA_VELOCITY), 0, 0);
+            worldCenter.x += cameraSpeed;
+        }
+
+        static bool spacePressed = false;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            if (!spacePressed) {
+                draw_line = !draw_line;
+                spacePressed = true;
+            }
+        } else {
+            spacePressed = false;
         }
 
         glPolygonMode(GL_FRONT_AND_BACK, draw_line ? GL_LINE : GL_FILL);
-
         glUseProgram(shaderProgram);
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
+
+        float camX = worldCenter.x + cameraDistance * cos(cameraAngleY) * cos(cameraAngleX);
+        float camY = worldCenter.y + cameraDistance * sin(cameraAngleY);
+        float camZ = worldCenter.z + cameraDistance * cos(cameraAngleY) * sin(cameraAngleX);
+
+        auto cameraPos = glm::vec3(camX, camY, camZ);
         auto target = glm::vec3(0.0f, 0.0f, 0.0f);
         auto cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
