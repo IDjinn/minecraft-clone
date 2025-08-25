@@ -6,7 +6,15 @@
 #define MINECRAFT_MACROS_H
 
 #include <iostream>
-#include <cstdlib>
+#include <vector>
+#include <sstream>
+
+extern std::vector<std::string> debug_output;
+
+inline void debug_print(const std::string &message) {
+    if (debug_output.size() > 20) debug_output.erase(debug_output.begin(), debug_output.begin() + 20);
+    debug_output.push_back(message);
+}
 
 #ifdef _MSC_VER
 // Microsoft Visual Studio
@@ -42,7 +50,12 @@ std::abort(); \
 
 #ifdef MINECRAFT_DEBUG
 #define DEBUG_ASSERT(condition, message) ASSERT(condition, message)
-#define DEBUG_PRINT(message) std::cout << message << "\n"
+#define DEBUG_PRINT(msg) do { \
+std::ostringstream oss__; \
+oss__ << msg; \
+debug_print(oss__.str()); \
+} while(0)
+
 #else
 #define DEBUG_ASSERT(condition, message) ((void)0)
 #define DEBUG_PRINT(message) ((void)0)

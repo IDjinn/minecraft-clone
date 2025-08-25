@@ -62,6 +62,9 @@ auto fragmentShaderSource = R"glsl(
 float cameraDistance = 15.0f;
 float cameraAngleX = 0.0f;
 float cameraAngleY = 0.0f;
+long long frameCounter = 0;
+
+extern  std::vector<std::string> debug_output{};
 
 void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, const double yoffset) {
     cameraDistance -= static_cast<float>(yoffset) * ZOOM_SPEED;
@@ -286,13 +289,13 @@ int main() {
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
-
     glEnable(GL_DEPTH_TEST);
 
     auto worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
     bool draw_line = false;
     static float deltaTime = 0.0f;
     static float lastFrame = 0.0f;
+
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -300,15 +303,7 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        auto currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        ImGui::Begin("Debug");
-        ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
-        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f);
-        ImGui::End();
-
+        frameCounter++;
         float cameraSpeed = CAMERA_SPEED * deltaTime;
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             cameraAngleY += cameraSpeed * 0.5f;
@@ -370,12 +365,28 @@ int main() {
         const auto projLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glBindVertexArray(visibleVAO);
         glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
         glBindVertexArray(0);
+
+
+        auto currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        ImGui::Begin("Debug");
+        ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
+        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f);
+        {
+            ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
+            for (auto& line : debug_output)
+                ImGui::TextUnformatted(line.c_str());
+            ImGui::EndChild();
+        }
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();

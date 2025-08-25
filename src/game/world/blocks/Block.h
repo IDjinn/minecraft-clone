@@ -13,13 +13,9 @@ class Block {
     uint8_t blockType;
 
 public:
-    Block(const Block &) {
-        DEBUG_PRINT("block " << i << " was copied (one)");
-    }
+    Block(const Block &) =delete;
 
-    Block &operator=(const Block &) {
-        DEBUG_PRINT("block " << i << " was copied (two)");
-    }
+    Block &operator=(const Block &)  =delete;
 
     Block() = default;
 

@@ -47,10 +47,6 @@ struct Chunk {
     static constexpr int block_index(const int x, const int y, const int z) {
         return x + CHUNK_SIZE_X * (y + CHUNK_SIZE_Y * z);
     }
-
-    void setBlock(int x, int y, int z, Block block);
-
-    void setBlock(int index, Block block);
 };
 
 
