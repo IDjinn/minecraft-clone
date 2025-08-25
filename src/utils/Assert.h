@@ -11,9 +11,12 @@
 
 extern std::vector<std::string> debug_output;
 
-inline void debug_print(const std::string &message) {
-    if (debug_output.size() > 20) debug_output.erase(debug_output.begin(), debug_output.begin() + 20);
+inline void minecraft_debug_print(const std::string &message) {
+    if (!debug_output.empty() && debug_output.size() > 20)
+        debug_output.erase(debug_output.begin());
+
     debug_output.push_back(message);
+    std::cout << message;
 }
 
 #ifdef _MSC_VER
@@ -53,7 +56,7 @@ std::abort(); \
 #define DEBUG_PRINT(msg) do { \
 std::ostringstream oss__; \
 oss__ << msg; \
-debug_print(oss__.str()); \
+minecraft_debug_print(oss__.str()); \
 } while(0)
 
 #else

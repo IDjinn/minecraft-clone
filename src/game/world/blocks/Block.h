@@ -13,9 +13,9 @@ class Block {
     uint8_t blockType;
 
 public:
-    Block(const Block &) =delete;
+    Block(const Block &) = delete;
 
-    Block &operator=(const Block &)  =delete;
+    Block &operator=(const Block &) = delete;
 
     Block() = default;
 

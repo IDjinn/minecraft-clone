@@ -64,7 +64,7 @@ float cameraAngleX = 0.0f;
 float cameraAngleY = 0.0f;
 long long frameCounter = 0;
 
-extern  std::vector<std::string> debug_output{};
+std::vector<std::string> debug_output;
 
 void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, const double yoffset) {
     cameraDistance -= static_cast<float>(yoffset) * ZOOM_SPEED;
@@ -374,12 +374,14 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        DEBUG_PRINT("im here!@ "<< frameCounter);
+
         ImGui::Begin("Debug");
         ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
-        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f);
-        {
-            ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
-            for (auto& line : debug_output)
+        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f); {
+            ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
+                              ImGuiWindowFlags_HorizontalScrollbar);
+            for (auto &line: debug_output)
                 ImGui::TextUnformatted(line.c_str());
             ImGui::EndChild();
         }
