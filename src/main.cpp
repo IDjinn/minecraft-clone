@@ -223,6 +223,7 @@ int main() {
 
 
     std::vector<float> visibleVertices;
+    long long totalCubes = 0;
     for (auto &[chunk_index, chunk]: world->chunks) {
         for (auto x = 0; x < CHUNK_SIZE_X; x++) {
             for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -230,6 +231,7 @@ int main() {
                     auto index = Chunk::block_index(x, y, z);
                     auto &block = chunk->blocks[index];
                     if (block.block_type() == AIR) continue;
+                    totalCubes++;
 
                     for (auto face = 0; face < 6; ++face) {
                         auto nx = x + directions[face][0];
@@ -268,11 +270,13 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
+    DEBUG_ASSERT(visibleVertices.size() < WORLD_MAX_VERTICES,
+                 "created more vertices than possible in this implementation (something wrong with culling?)");
     DEBUG_PRINT("Total vertices: " << visibleVertices.size()
-        << " max: " << WORLD_MAX_VERTICES
-        << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
-        << std::endl);
-
+                << " max: " << WORLD_MAX_VERTICES
+                << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
+                << std::endl);
+    DEBUG_PRINT("Total cubes: " << totalCubes);
 
     unsigned int visibleVAO, visibleVBO;
     glGenVertexArrays(1, &visibleVAO);
@@ -373,8 +377,6 @@ int main() {
         auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        DEBUG_PRINT("im here!@ "<< frameCounter);
 
         ImGui::Begin("Debug");
         ImGui::Text("FPS: %.1f", 1.0f / deltaTime);

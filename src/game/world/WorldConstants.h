@@ -5,13 +5,13 @@
 #ifndef MINECRAFT_WORLDCONSTANTS_H
 #define MINECRAFT_WORLDCONSTANTS_H
 
-#define WORLD_SIZE_X 4
-#define WORLD_SIZE_Y 4
-#define WORLD_SIZE_Z 4
+#define WORLD_SIZE_X 16
+#define WORLD_SIZE_Y 16
+#define WORLD_SIZE_Z 1
 
-#define CHUNK_SIZE_X 4
-#define CHUNK_SIZE_Y 4
-#define CHUNK_SIZE_Z 4
+#define CHUNK_SIZE_X 64
+#define CHUNK_SIZE_Y 64
+#define CHUNK_SIZE_Z 64
 
 #define CUBE_FACES 6
 

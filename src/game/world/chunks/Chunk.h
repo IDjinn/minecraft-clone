@@ -12,10 +12,10 @@
 #include "../blocks/BlockType.h"
 
 struct Chunk {
-    uint64_t id{};
+    uint32_t id{};
     std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
 
-    Chunk(uint64_t id) : id(id) {
+    Chunk(uint32_t id) : id(id) {
     }
 
     Chunk(const Chunk &) = delete;

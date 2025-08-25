@@ -16,7 +16,7 @@ inline void minecraft_debug_print(const std::string &message) {
         debug_output.erase(debug_output.begin());
 
     debug_output.push_back(message);
-    std::cout << message;
+    std::cout << message << "\n";
 }
 
 #ifdef _MSC_VER

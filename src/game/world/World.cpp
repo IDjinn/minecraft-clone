@@ -12,17 +12,17 @@ Chunk &World::getChunk(const int x, const int y, const int z) {
     return getChunk(chunk_id);
 }
 
-Chunk &World::getChunk(uint8_t chunk_index) {
+Chunk &World::getChunk(uint32_t chunk_index) {
     auto it = chunks.find(chunk_index);
     ASSERT(it != chunks.end(), "Chunk was not found/loaded");
     return *it->second;
 }
 
-bool World::isChunkLoaded(uint8_t chunk_index) {
+bool World::isChunkLoaded(uint32_t chunk_index) {
     return chunks.find(chunk_index) != chunks.end();
 }
 
-bool World::loadChunk(uint8_t chunk_index) {
+bool World::loadChunk(uint32_t chunk_index) {
     if (isChunkLoaded(chunk_index)) return false;
 
     chunks[chunk_index] = std::make_unique<Chunk>(chunk_index);
