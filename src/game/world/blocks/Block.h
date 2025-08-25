@@ -6,11 +6,21 @@
 #define MINECRAFT_BLOCK_H
 #include <cstdint>
 
+#include "../../../utils/Assert.h"
+
 class Block {
     uint8_t i;
     uint8_t blockType;
 
 public:
+    Block(const Block &) {
+        DEBUG_PRINT("block " << i << " was copied (one)");
+    }
+
+    Block &operator=(const Block &) {
+        DEBUG_PRINT("block " << i << " was copied (two)");
+    }
+
     Block() = default;
 
     void setIndex(uint64_t index);

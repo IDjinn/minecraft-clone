@@ -15,15 +15,13 @@ std::unique_ptr<World> WorldGenerator::generateWorld() {
         for (int x = 0; x < WORLD_SIZE_X; ++x) {
             for (int z = 0; z < WORLD_SIZE_Z; ++z) {
                 auto chunk_index = World::chunk_index(x, y, z);
-                auto chunk = world->getChunk(chunk_index);
+                auto chunkLoaded = world->loadChunk(chunk_index);
+                DEBUG_ASSERT(chunkLoaded, "failed loading chunk");
+                if (!chunkLoaded) continue;
+
+                auto &chunk = world->getChunk(chunk_index);
                 chunk.setIndex(chunk_index);
-
-
-                for (uint8_t i = 0; i < chunk.blocks.size(); ++i) {
-                    auto block = chunk.blocks[i];
-                    block.setIndex(i);
-                    block.setBlockType(DIRT);
-                }
+                chunk.initializeBlocks();
             }
         }
     }

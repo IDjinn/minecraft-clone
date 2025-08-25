@@ -9,7 +9,15 @@
 #define WORLD_SIZE_Y 4
 #define WORLD_SIZE_Z 4
 
-#define CHUNK_SIZE 64
+#define CHUNK_SIZE_X 4
+#define CHUNK_SIZE_Y 4
+#define CHUNK_SIZE_Z 4
+
+#define CUBE_FACES 6
+
+#define WORLD_MAX_VERTICES ((WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z) * \
+(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z) * \
+CUBE_FACES * 30)
 
 #define OVERWORLD 0
 

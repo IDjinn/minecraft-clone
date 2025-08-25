@@ -15,6 +15,9 @@
 #include "game/world/blocks/BlockType.h"
 #include "game/world/chunks/Chunk.h"
 #include "game/world/generation/WorldGenerator.h"
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
 
 #define WIDTH 1920
 #define HEIGHT 1024
@@ -56,8 +59,6 @@ auto fragmentShaderSource = R"glsl(
 )glsl";
 
 
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
 float cameraDistance = 15.0f;
 float cameraAngleX = 0.0f;
 float cameraAngleY = 0.0f;
@@ -113,62 +114,9 @@ int main() {
 
     auto world = WorldGenerator::generateWorld();
 
-
-    constexpr float cubeVertices[] = {
-        // positions
-        // front face
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-
-        // back face
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-
-        // left face
-        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-
-        // right face
-        0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-
-        // top face
-        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
-
-        // bottom face
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-    };
-
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -192,14 +140,6 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
 
@@ -212,7 +152,6 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Dados das faces com posição e coordenadas de textura
     const float faceVertices[6][30] = {
         // front face (z+) - posição + tex coords
         {
@@ -279,37 +218,57 @@ int main() {
         {0, -1, 0} // bottom
     };
 
-    auto isSolid = [&](const int x, const int y, const int z) {
-        if (World::isOutOfBounds(x, y, z)) return false;
-
-
-        return x >= 0 && x < 10 && y >= 0 && y < 10 && z >= 0 && z < 10;
-    };
 
     std::vector<float> visibleVertices;
-    for (auto chunk: world->chunks) {
-        for (auto block: chunk.blocks) {
-            if (block.block_type() == AIR) continue;
+    for (auto &[chunk_index, chunk]: world->chunks) {
+        for (auto x = 0; x < CHUNK_SIZE_X; x++) {
+            for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
+                for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
+                    auto index = Chunk::block_index(x, y, z);
+                    auto &block = chunk->blocks[index];
+                    if (block.block_type() == AIR) continue;
 
-            for (int face = 0; face < 6; ++face) {
-                auto nx = block.x() + directions[face][0];
-                auto ny = block.y() + directions[face][1];
-                auto nz = block.z() + directions[face][2];
+                    for (auto face = 0; face < 6; ++face) {
+                        auto nx = x + directions[face][0];
+                        auto ny = y + directions[face][1];
+                        auto nz = z + directions[face][2];
 
-                if (isSolid(nx, ny, nz)) continue;
+                        auto neighborIsSolid = false;
 
-                for (int i = 0; i < 30; i += 5) {
-                    float vx = faceVertices[face][i] + static_cast<float>(block.x());
-                    float vy = faceVertices[face][i + 1] + static_cast<float>(block.y());
-                    float vz = faceVertices[face][i + 2] + static_cast<float>(block.z());
-                    float u = faceVertices[face][i + 3];
-                    float v = faceVertices[face][i + 4];
+                        if (nx >= 0 && nx < CHUNK_SIZE_X &&
+                            ny >= 0 && ny < CHUNK_SIZE_Y &&
+                            nz >= 0 && nz < CHUNK_SIZE_Z) {
+                            int neighbor_index = Chunk::block_index(nx, ny, nz);
+                            neighborIsSolid = chunk->blocks[neighbor_index].block_type() != AIR;
+                        }
 
-                    visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
+                        if (neighborIsSolid) continue;
+
+                        for (int i = 0; i < 30; i += 5) {
+                            auto vx = faceVertices[face][i] + static_cast<float>(x);
+                            auto vy = faceVertices[face][i + 1] + static_cast<float>(y);
+                            auto vz = faceVertices[face][i + 2] + static_cast<float>(z);
+                            auto u = faceVertices[face][i + 3];
+                            auto v = faceVertices[face][i + 4];
+                            visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
+                        }
+                    }
                 }
             }
         }
     }
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    DEBUG_PRINT("Total vertices: " << visibleVertices.size()
+        << " max: " << WORLD_MAX_VERTICES
+        << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
+        << std::endl);
 
 
     unsigned int visibleVAO, visibleVBO;
@@ -332,13 +291,23 @@ int main() {
 
     auto worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
     bool draw_line = false;
+    static float deltaTime = 0.0f;
+    static float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        ImGui::Begin("Debug");
+        ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
+        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f);
+        ImGui::End();
 
         float cameraSpeed = CAMERA_SPEED * deltaTime;
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -401,17 +370,22 @@ int main() {
         const auto projLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glBindVertexArray(visibleVAO);
         glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
         glBindVertexArray(0);
-
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glDeleteVertexArrays(1, &visibleVAO);
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();

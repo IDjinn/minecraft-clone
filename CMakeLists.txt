@@ -25,9 +25,18 @@ add_executable(minecraft
 
 target_include_directories(minecraft PRIVATE
         ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/imgui
+        ${CMAKE_SOURCE_DIR}/include/imgui/backends
         ${CMAKE_SOURCE_DIR}/glfw/include
 )
-
+target_sources(minecraft PRIVATE
+        ${CMAKE_SOURCE_DIR}/include/imgui/imgui.cpp
+        ${CMAKE_SOURCE_DIR}/include/imgui/imgui_draw.cpp
+        ${CMAKE_SOURCE_DIR}/include/imgui/imgui_tables.cpp
+        ${CMAKE_SOURCE_DIR}/include/imgui/imgui_widgets.cpp
+        ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_glfw.cpp
+        ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_opengl3.cpp
+)
 target_link_libraries(minecraft
         ${CMAKE_SOURCE_DIR}/glfw/lib-mingw-w64/libglfw3.a
         opengl32
