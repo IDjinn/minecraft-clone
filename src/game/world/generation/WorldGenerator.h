@@ -10,8 +10,6 @@
 
 
 class WorldGenerator {
-    static Chunk build_chunk(uint8_t index);
-
 public:
     static std::unique_ptr<World> generateWorld();
 };

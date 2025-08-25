@@ -5,11 +5,10 @@
 #include "WorldGenerator.h"
 
 #include "../../../utils/Assert.h"
-#include "../blocks/BlockType.h"
 
 
 std::unique_ptr<World> WorldGenerator::generateWorld() {
-    auto world = std::make_unique<World>(OVERWORLD, glm::vec3(0, 30, 0));
+    auto world = std::make_unique<World>(OVERWORLD, WORLD_SPAWN_COORDS);
 
     for (int y = 0; y < WORLD_SIZE_Y; ++y) {
         for (int x = 0; x < WORLD_SIZE_X; ++x) {
