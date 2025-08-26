@@ -9,6 +9,8 @@
 #include <vector>
 #include <sstream>
 
+#define MINECRAFT_DEBUG 1
+
 extern std::vector<std::string> debug_output;
 
 inline void minecraft_debug_print(const std::string &message) {
@@ -49,10 +51,9 @@ std::abort(); \
 } \
 } while(0)
 
-#define MINECRAFT_DEBUG 1
 
-#ifdef MINECRAFT_DEBUG
-#define WHEN_DEBUG(condition) condition
+#if MINECRAFT_DEBUG
+#define WHEN_DEBUG(code) code
 #define ASSERT_DEBUG(condition, message) ASSERT(condition, message)
 #define PRINT_DEBUG(msg) do { \
 std::ostringstream oss__; \
@@ -62,7 +63,7 @@ minecraft_debug_print(oss__.str()); \
 #else
 #define ASSERT_DEBUG(condition, message) ((void)0)
 #define PRINT_DEBUG(message) ((void)0)
-#define WHEN_DEBUG(condition) ((void)0)
+#define WHEN_DEBUG(code) ((void)0)
 #endif
 
 

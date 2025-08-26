@@ -1,0 +1,15 @@
+//
+// Created by Luke on 26/08/2025.
+//
+
+#ifndef MINECRAFT_GAMECONSTANTS_H
+#define MINECRAFT_GAMECONSTANTS_H
+
+
+#define WIDTH 1920
+#define HEIGHT 1024
+
+#define CAMERA_SPEED 10.0f
+#define PITCH 89.0f
+
+#endif //MINECRAFT_GAMECONSTANTS_H

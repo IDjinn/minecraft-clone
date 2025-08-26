@@ -5,14 +5,21 @@
 #ifndef MINECRAFT_DEBUGGUI_H
 #define MINECRAFT_DEBUGGUI_H
 
+#include <memory>
+
+#include "../render/Render.h"
 #include "GLFW/glfw3.h"
+
+
+struct Player;
+struct Render;
 
 struct DebugGui {
     static void setup(GLFWwindow *window);
 
     static void prepare();
 
-    static void render(float delta_time);
+    static void render(const Render *, const std::shared_ptr<Player> &player);
 
     static void destroy();
 };

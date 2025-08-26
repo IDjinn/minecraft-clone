@@ -18,11 +18,18 @@ add_executable(minecraft
         src/game/world/blocks/Block.cpp
         src/game/world/blocks/Block.h
         src/game/world/WorldConstants.h
-        src/game/world/generation/WorldGenerator.cpp
-        src/game/world/generation/WorldGenerator.h
         src/utils/Assert.h
         src/utils/DebugGui.cpp
         src/utils/DebugGui.h
+        src/render/Render.cpp
+        src/render/Render.h
+        src/game/GameConstants.h
+        src/render/TextureManager.cpp
+        src/render/TextureManager.h
+        src/render/ShaderManager.cpp
+        src/render/ShaderManager.h
+        src/game/Game.cpp
+        src/game/Game.h
 )
 
 target_include_directories(minecraft PRIVATE

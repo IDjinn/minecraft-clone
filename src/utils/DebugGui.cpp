@@ -4,8 +4,12 @@
 
 #include "DebugGui.h"
 
+#include <memory>
+
 #include "Assert.h"
 #include "imgui.h"
+#include "../game/players/Player.h"
+#include "../render/Render.h"
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_glfw.h"
 #include "imgui/backends/imgui_impl_opengl3.h"
@@ -26,13 +30,12 @@ void DebugGui::prepare() {
     ImGui::NewFrame();
 }
 
-void DebugGui::render(float delta_time) {
+void DebugGui::render(const Render *render, const std::shared_ptr<Player> &player) {
     ImGui::Begin("Debug");
-    ImGui::Text("FPS: %.1f", 1.0f / delta_time);
-    // ImGui::Text("Pos: (%.1f, %.1f, %.1f)", Camera::player.position.x, Camera::player.position.y,
-    //             Camera::player.position.z);
-    // ImGui::Text("Yaw: %.1f, Pitch: %.1f", Camera::yaw, Camera::pitch);
-    // ImGui::Text("Mouse: %s", Camera::mouseEnabled ? "Enabled" : "Disabled");
+    ImGui::Text("FPS: %.1f", 1.0f / render->delta_time);
+    ImGui::Text("Pos: (%.1f, %.1f, %.1f)", player->position.x, player->position.y, player->position.z);
+    ImGui::Text("Yaw: %.1f, Pitch: %.1f", render->yaw, render->pitch);
+    ImGui::Text("Mouse: %s", render->mouseEnabled ? "Enabled" : "Disabled");
     ImGui::Text("Press ESC to toggle mouse"); {
         ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
                           ImGuiWindowFlags_HorizontalScrollbar);
