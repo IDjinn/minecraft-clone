@@ -11,8 +11,8 @@
 
 #include "chunks/Chunk.h"
 #include "glm/vec3.hpp"
+#include "../players/Player.h"
 
-#include "WorldConstants.h"
 
 struct WorldCoord {
     int32_t x, y, z;
@@ -21,24 +21,25 @@ struct WorldCoord {
 struct World {
     uint8_t id;
     glm::vec3 spawn_point;
+    std::vector<Player> players;
 
     std::unordered_map<ChunkId, std::unique_ptr<Chunk> > chunks{};
 
-    World(uint8_t id, const glm::vec3 &spawn_point) : id(id), spawn_point(spawn_point) {
+    World(const uint8_t id, const glm::vec3 &spawn_point) : id(id), spawn_point(spawn_point) {
     }
 
-    // static constexpr ChunkId chunk_id(const int32_t x, const int32_t y, const int32_t z) {
-    //     return x + (WORLD_SIZE_X * y) + (WORLD_SIZE_X * WORLD_SIZE_Y * z);
-    // }
-    //
-    // static constexpr std::tuple<int32_t, int32_t, int32_t> chunk_id_to_coordinates(const ChunkId chunk_id) {
-    //     const auto z = chunk_id / (WORLD_SIZE_X * WORLD_SIZE_Y);
-    //     const auto remaining = chunk_id % (WORLD_SIZE_X * WORLD_SIZE_Y);
-    //     const auto y = remaining / WORLD_SIZE_X;
-    //     const auto x = remaining % WORLD_SIZE_X;
-    //
-    //     return {x, y, z};
-    // }
+    void add_player(const Player &player) {
+        PRINT_DEBUG(
+            "player " << player.name << "(" << player.id << ") added in (" << player.position.x << ", " << player.
+            position.y << ", " << player.position.z << ")");
+        WHEN_DEBUG(std::cout << std::flush);
+        players.push_back(player);
+    }
+
+    static uint32_t generate_entity_id() {
+        static uint32_t id = 0;
+        return ++id;
+    }
 
     static constexpr ChunkId chunk_id_from_world_coords(const WorldCoord coord) {
         const auto chunkX = coord.x / CHUNK_SIZE_X;
@@ -56,12 +57,6 @@ struct World {
 
         return {chunkX * CHUNK_SIZE_X, chunkY * CHUNK_SIZE_Y, chunkZ * CHUNK_SIZE_Z};
     }
-
-
-    // static constexpr std::tuple<int32_t, int32_t, int32_t> chunk_id_to_world_coords(const ChunkId id) {
-    //     auto [chunkX, chunkY, chunkZ] = chunk_id_to_coordinates(id);
-    //     return {chunkX * CHUNK_SIZE_X, chunkY * CHUNK_SIZE_Y, chunkZ * CHUNK_SIZE_Z};
-    // }
 
     [[nodiscard]] Chunk &getChunk(WorldCoord coords);
 

@@ -11,19 +11,18 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "game/players/Player.h"
 #include "game/world/blocks/Block.h"
 #include "game/world/blocks/BlockType.h"
 #include "game/world/chunks/Chunk.h"
 #include "game/world/generation/WorldGenerator.h"
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_glfw.h"
-#include "imgui/backends/imgui_impl_opengl3.h"
-
-#define WIDTH 1920
-#define HEIGHT 1024
+#include "utils/DebugGui.h"
 
 #define PITCH 89.0f
 #define CAMERA_SPEED 10.0f
+
+#define WIDTH 1920
+#define HEIGHT 1024
 
 void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, const int width, const int height) {
     glViewport(0, 0, width, height);
@@ -76,20 +75,21 @@ void load_texture(const std::string &texture_name) {
     stbi_image_free(data);
 }
 
-glm::vec3 cameraPos = WORLD_SPAWN_COORDS;
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-float yaw = -90.0f;
-float pitch = 0.0f;
-float lastX = WIDTH / 2.0f;
-float lastY = HEIGHT / 2.0f;
-bool firstMouse = true;
-bool mouseEnabled = true;
-static bool spacePressed = false;
-static bool draw_line = false;
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
+
+auto player = Player(World::generate_entity_id(), "Steve", WORLD_SPAWN_COORDS);
+
+
+static float yaw;
+static float pitch;
+static float lastX;
+static float lastY;
+static bool firstMouse;
+static bool mouseEnabled;
+static bool spacePressed;
+static bool draw_line;
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     if (!mouseEnabled) return;
@@ -121,7 +121,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
+    player.cameraFront = glm::normalize(direction);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
@@ -152,22 +152,20 @@ void processInput(GLFWwindow *window, float deltaTime) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
+        player.position += cameraSpeed * player.cameraFront;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
+        player.position -= cameraSpeed * player.cameraFront;
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        player.position -= glm::normalize(glm::cross(player.cameraFront, player.cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        player.position += glm::normalize(glm::cross(player.cameraFront, player.cameraUp)) * cameraSpeed;
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraUp;
+        player.position += cameraSpeed * player.cameraUp;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraUp;
+        player.position -= cameraSpeed * player.cameraUp;
 }
-
-
 int main() {
     if (!glfwInit()) {
         std::cerr << "failed to init GLFW\n";
@@ -195,13 +193,15 @@ int main() {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    DebugGui::setup(window);
 
     glViewport(0, 0, WIDTH, HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetScrollCallback(window, scroll_callback);
 
     auto world = WorldGenerator::generateWorld();
+    world->add_player(player);
 
     unsigned int texture;
     glGenTextures(1, &texture);
@@ -241,73 +241,6 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    const float faceVertices[6][30] = {
-        // front face (z+) - posição + tex coords
-        {
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f
-        },
-        // back face (z-)
-        {
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f
-        },
-        // left face (x-)
-        {
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-            -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f
-        },
-        // right face (x+)
-        {
-            0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 1.0f
-        },
-        // top face (y+)
-        {
-            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f
-        },
-        // bottom face (y-)
-        {
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f
-        }
-    };
-
-    const int directions[6][3] = {
-        {0, 0, 1}, // front
-        {0, 0, -1}, // back
-        {-1, 0, 0}, // left
-        {1, 0, 0}, // right
-        {0, 1, 0}, // top
-        {0, -1, 0} // bottom
-    };
-
-
     std::vector<float> visibleVertices;
     long long totalCubes = 0;
     for (auto &[chunk_index, chunk]: world->chunks) {
@@ -334,7 +267,7 @@ int main() {
                         if (nx >= 0 && nx < CHUNK_SIZE_X &&
                             ny >= 0 && ny < CHUNK_SIZE_Y &&
                             nz >= 0 && nz < CHUNK_SIZE_Z) {
-                            int neighbor_index = Chunk::block_index(nx, ny, nz);
+                            auto neighbor_index = Chunk::block_index(nx, ny, nz);
                             neighborIsSolid = chunk->blocks[neighbor_index].block_type() != AIR;
                         } else {
                             auto neighbor_block_x = x + directions[face][0];
@@ -373,13 +306,6 @@ int main() {
         }
     }
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void) io;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
 
     ASSERT_DEBUG(visibleVertices.size() < WORLD_MAX_VERTICES,
                  "created more vertices than possible in this implementation (something wrong with culling?)");
@@ -410,14 +336,11 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        DebugGui::prepare();
 
         auto currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
         processInput(window, deltaTime);
 
         glPolygonMode(GL_FRONT_AND_BACK, draw_line ? GL_LINE : GL_FILL);
@@ -427,7 +350,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texture);
         glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = glm::lookAt(player.position, player.position + player.cameraFront, player.cameraUp);
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
 
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -440,30 +363,12 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
         glBindVertexArray(0);
 
-        ImGui::Begin("Debug");
-        ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
-        ImGui::Text("Pos: (%.1f, %.1f, %.1f)", cameraPos.x, cameraPos.y, cameraPos.z);
-        ImGui::Text("Yaw: %.1f, Pitch: %.1f", yaw, pitch);
-        ImGui::Text("Mouse: %s", mouseEnabled ? "Enabled" : "Disabled");
-        ImGui::Text("Press ESC to toggle mouse"); {
-            ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
-                              ImGuiWindowFlags_HorizontalScrollbar);
-            for (auto &line: debug_output)
-                ImGui::TextUnformatted(line.c_str());
-            ImGui::EndChild();
-        }
-        ImGui::End();
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+        DebugGui::render(deltaTime);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    DebugGui::destroy();
 
     glDeleteVertexArrays(1, &visibleVAO);
     glDeleteProgram(shaderProgram);

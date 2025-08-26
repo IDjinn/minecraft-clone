@@ -21,6 +21,8 @@ add_executable(minecraft
         src/game/world/generation/WorldGenerator.cpp
         src/game/world/generation/WorldGenerator.h
         src/utils/Assert.h
+        src/utils/DebugGui.cpp
+        src/utils/DebugGui.h
 )
 
 target_include_directories(minecraft PRIVATE
