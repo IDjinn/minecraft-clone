@@ -166,6 +166,7 @@ void processInput(GLFWwindow *window, float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         player.position -= cameraSpeed * player.cameraUp;
 }
+
 int main() {
     if (!glfwInit()) {
         std::cerr << "failed to init GLFW\n";
@@ -248,54 +249,49 @@ int main() {
         const auto chunk_id = World::chunk_id_from_world_coords({chunk_x, chunk_y, chunk_z});
         ASSERT_DEBUG(chunk_index == chunk_id, "Mismatch chunking id => coordinates");
 
+        visibleVertices.reserve(WORLD_RENDER_VERTICES_RESERVE);
         for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
             for (auto x = 0; x < CHUNK_SIZE_X; x++) {
                 for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
                     auto index = Chunk::block_index(x, y, z);
-                    auto &block = chunk->blocks[index];
-                    if (block.block_type() == AIR) continue;
-                    totalCubes++;
+                    if (auto &block = chunk->blocks[index]; block.block_type() == AIR) continue;
 
+                    totalCubes++;
                     for (auto face = 0; face < 6; ++face) {
                         auto nx = x + directions[face][0];
                         auto ny = y + directions[face][1];
                         auto nz = z + directions[face][2];
 
                         auto neighborIsSolid = false;
-
-                        const auto world_current_block_position = glm::vec3(chunk_x + x, chunk_y + y, chunk_z + z);
+                        const auto world_position_current_block = glm::vec3(chunk_x + x, chunk_y + y, chunk_z + z);
                         if (nx >= 0 && nx < CHUNK_SIZE_X &&
                             ny >= 0 && ny < CHUNK_SIZE_Y &&
                             nz >= 0 && nz < CHUNK_SIZE_Z) {
-                            auto neighbor_index = Chunk::block_index(nx, ny, nz);
-                            neighborIsSolid = chunk->blocks[neighbor_index].block_type() != AIR;
+                            auto neighbor_block_index = Chunk::block_index(nx, ny, nz);
+                            neighborIsSolid = chunk->blocks[neighbor_block_index].block_type() != AIR;
                         } else {
-                            auto neighbor_block_x = x + directions[face][0];
-                            auto neighbor_block_y = y + directions[face][1];
-                            auto neighbor_block_z = z + directions[face][2];
+                            auto neighbor_x = x + directions[face][0];
+                            auto neighbor_y = y + directions[face][1];
+                            auto neighbor_z = z + directions[face][2];
                             auto neighbor_chunk_id = World::chunk_id_from_world_coords(
-                                {chunk_x + neighbor_block_x, chunk_y + neighbor_block_y, chunk_z + neighbor_block_z}
+                                {chunk_x + neighbor_x, chunk_y + neighbor_y, chunk_z + neighbor_z}
                             );
 
-                            auto it = world->chunks.find(neighbor_chunk_id);
-                            if (it != world->chunks.end()) {
+                            if (auto it = world->chunks.find(neighbor_chunk_id); it != world->chunks.end()) {
                                 auto &neighbor_chunk = it->second;
-                                auto local_x = (neighbor_block_x + CHUNK_SIZE_X) % CHUNK_SIZE_X;
-                                auto local_y = (neighbor_block_y + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
-                                auto local_z = (neighbor_block_z + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
-                                auto neighbor_index = Chunk::block_index(local_x, local_y, local_z);
+                                auto neighbor_block_x = (neighbor_x + CHUNK_SIZE_X) % CHUNK_SIZE_X;
+                                auto neighbor_block_y = (neighbor_y + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
+                                auto neighbor_block_z = (neighbor_z + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
+                                auto neighbor_index = Chunk::block_index(neighbor_block_x, neighbor_block_y, neighbor_block_z);
                                 neighborIsSolid = neighbor_chunk->blocks[neighbor_index].block_type() != AIR;
-                            } else {
-                                neighborIsSolid = false;
                             }
                         }
 
                         if (neighborIsSolid) continue;
-
                         for (int i = 0; i < 30; i += 5) {
-                            auto vx = faceVertices[face][i] + world_current_block_position.x;
-                            auto vy = faceVertices[face][i + 1] + world_current_block_position.y;
-                            auto vz = faceVertices[face][i + 2] + world_current_block_position.z;
+                            auto vx = faceVertices[face][i] + world_position_current_block.x;
+                            auto vy = faceVertices[face][i + 1] + world_position_current_block.y;
+                            auto vz = faceVertices[face][i + 2] + world_position_current_block.z;
                             auto u = faceVertices[face][i + 3];
                             auto v = faceVertices[face][i + 4];
                             visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
@@ -332,7 +328,6 @@ int main() {
     glBindVertexArray(0);
     glEnable(GL_DEPTH_TEST);
 
-
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -351,7 +346,7 @@ int main() {
         glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 
         glm::mat4 view = glm::lookAt(player.position, player.position + player.cameraFront, player.cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 1000.0f);
 
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));

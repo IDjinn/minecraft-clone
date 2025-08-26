@@ -17,6 +17,7 @@
 
 #define WORLD_SPAWN_COORDS glm::vec3(1000, 100, 1000)
 #define WORLD_SPAWN_RENDER_CHUNKS 16
+#define WORLD_RENDER_VERTICES_RESERVE 300000
 
 
 const float faceVertices[6][30] = {
