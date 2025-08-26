@@ -59,7 +59,6 @@ auto fragmentShaderSource = R"glsl(
 )glsl";
 
 
-
 std::vector<std::string> debug_output;
 
 void load_texture(const std::string &texture_name) {
@@ -77,7 +76,7 @@ void load_texture(const std::string &texture_name) {
     stbi_image_free(data);
 }
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 5.0f, 10.0f);
+glm::vec3 cameraPos = WORLD_SPAWN_COORDS;
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -92,7 +91,7 @@ static bool draw_line = false;
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     if (!mouseEnabled) return;
 
     if (firstMouse) {
@@ -125,10 +124,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cameraFront = glm::normalize(direction);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         mouseEnabled = !mouseEnabled;
         if (mouseEnabled) {
@@ -140,7 +139,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-void processInput(GLFWwindow* window, float deltaTime) {
+void processInput(GLFWwindow *window, float deltaTime) {
     float cameraSpeed = CAMERA_SPEED * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -312,8 +311,12 @@ int main() {
     std::vector<float> visibleVertices;
     long long totalCubes = 0;
     for (auto &[chunk_index, chunk]: world->chunks) {
-        for (auto x = 0; x < CHUNK_SIZE_X; x++) {
-            for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
+        const auto [chunk_x, chunk_y, chunk_z] = World::chunk_id_to_world_coordinates(chunk_index);
+        const auto chunk_id = World::chunk_id_from_world_coords({chunk_x, chunk_y, chunk_z});
+        ASSERT_DEBUG(chunk_index == chunk_id, "Mismatch chunking id => coordinates");
+
+        for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
+            for (auto x = 0; x < CHUNK_SIZE_X; x++) {
                 for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
                     auto index = Chunk::block_index(x, y, z);
                     auto &block = chunk->blocks[index];
@@ -327,19 +330,39 @@ int main() {
 
                         auto neighborIsSolid = false;
 
+                        const auto world_current_block_position = glm::vec3(chunk_x + x, chunk_y + y, chunk_z + z);
                         if (nx >= 0 && nx < CHUNK_SIZE_X &&
                             ny >= 0 && ny < CHUNK_SIZE_Y &&
                             nz >= 0 && nz < CHUNK_SIZE_Z) {
                             int neighbor_index = Chunk::block_index(nx, ny, nz);
                             neighborIsSolid = chunk->blocks[neighbor_index].block_type() != AIR;
+                        } else {
+                            auto neighbor_block_x = x + directions[face][0];
+                            auto neighbor_block_y = y + directions[face][1];
+                            auto neighbor_block_z = z + directions[face][2];
+                            auto neighbor_chunk_id = World::chunk_id_from_world_coords(
+                                {chunk_x + neighbor_block_x, chunk_y + neighbor_block_y, chunk_z + neighbor_block_z}
+                            );
+
+                            auto it = world->chunks.find(neighbor_chunk_id);
+                            if (it != world->chunks.end()) {
+                                auto &neighbor_chunk = it->second;
+                                auto local_x = (neighbor_block_x + CHUNK_SIZE_X) % CHUNK_SIZE_X;
+                                auto local_y = (neighbor_block_y + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
+                                auto local_z = (neighbor_block_z + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
+                                auto neighbor_index = Chunk::block_index(local_x, local_y, local_z);
+                                neighborIsSolid = neighbor_chunk->blocks[neighbor_index].block_type() != AIR;
+                            } else {
+                                neighborIsSolid = false;
+                            }
                         }
 
                         if (neighborIsSolid) continue;
 
                         for (int i = 0; i < 30; i += 5) {
-                            auto vx = faceVertices[face][i] + static_cast<float>(x);
-                            auto vy = faceVertices[face][i + 1] + static_cast<float>(y);
-                            auto vz = faceVertices[face][i + 2] + static_cast<float>(z);
+                            auto vx = faceVertices[face][i] + world_current_block_position.x;
+                            auto vy = faceVertices[face][i + 1] + world_current_block_position.y;
+                            auto vz = faceVertices[face][i + 2] + world_current_block_position.z;
                             auto u = faceVertices[face][i + 3];
                             auto v = faceVertices[face][i + 4];
                             visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
@@ -349,6 +372,7 @@ int main() {
             }
         }
     }
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -357,13 +381,13 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    DEBUG_ASSERT(visibleVertices.size() < WORLD_MAX_VERTICES,
+    ASSERT_DEBUG(visibleVertices.size() < WORLD_MAX_VERTICES,
                  "created more vertices than possible in this implementation (something wrong with culling?)");
-    DEBUG_PRINT("Total vertices: " << visibleVertices.size()
-                << " max: " << WORLD_MAX_VERTICES
-                << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
-                << std::endl);
-    DEBUG_PRINT("Total cubes: " << totalCubes);
+    PRINT_DEBUG("Total vertices: " << visibleVertices.size()
+        << " max: " << WORLD_MAX_VERTICES
+        << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
+        << std::endl);
+    PRINT_DEBUG("Total cubes: " << totalCubes);
 
     unsigned int visibleVAO, visibleVBO;
     glGenVertexArrays(1, &visibleVAO);
@@ -404,7 +428,7 @@ int main() {
         glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),  (float)WIDTH / (float)HEIGHT,  0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
 
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -421,8 +445,7 @@ int main() {
         ImGui::Text("Pos: (%.1f, %.1f, %.1f)", cameraPos.x, cameraPos.y, cameraPos.z);
         ImGui::Text("Yaw: %.1f, Pitch: %.1f", yaw, pitch);
         ImGui::Text("Mouse: %s", mouseEnabled ? "Enabled" : "Disabled");
-        ImGui::Text("Press ESC to toggle mouse");
-        {
+        ImGui::Text("Press ESC to toggle mouse"); {
             ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
                               ImGuiWindowFlags_HorizontalScrollbar);
             for (auto &line: debug_output)

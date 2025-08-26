@@ -7,6 +7,9 @@
 #include <memory>
 
 #include "../World.h"
+#include <algorithm>
+
+#include "../../../utils/Assert.h"
 
 
 class WorldGenerator {

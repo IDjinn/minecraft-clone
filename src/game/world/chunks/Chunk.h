@@ -11,11 +11,21 @@
 #include "../WorldConstants.h"
 #include "../blocks/BlockType.h"
 
-struct Chunk {
-    uint32_t id{};
-    std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
+using ChunkId = int32_t;
 
-    Chunk(uint32_t id) : id(id) {
+enum class ChunkState {
+    UNKNOWN = 0,
+
+    LOADED = 1,
+    INITIALIZED = 2,
+};
+
+struct Chunk {
+    ChunkId id{};
+    std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
+    ChunkState state = ChunkState::UNKNOWN;
+
+    Chunk(ChunkId id) : id(id) {
     }
 
     Chunk(const Chunk &) = delete;
@@ -30,6 +40,10 @@ struct Chunk {
         return &blocks[index];
     }
 
+    [[nodiscard]] ChunkState getState() const {
+        return state;
+    }
+
     void initializeBlocks() {
         for (int x = 0; x < CHUNK_SIZE_X; x++) {
             for (int y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -40,11 +54,17 @@ struct Chunk {
                 }
             }
         }
+
+        this->setState(ChunkState::INITIALIZED);
+    }
+
+    void setState(const ChunkState newState) {
+        this->state = newState;
     }
 
     void setIndex(uint8_t chunk_index);
 
-    static constexpr int block_index(const int x, const int y, const int z) {
+    static constexpr uint32_t block_index(const uint32_t x, const uint32_t y, const uint32_t z) {
         return x + CHUNK_SIZE_X * (y + CHUNK_SIZE_Y * z);
     }
 };

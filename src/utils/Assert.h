@@ -52,16 +52,17 @@ std::abort(); \
 #define MINECRAFT_DEBUG 1
 
 #ifdef MINECRAFT_DEBUG
-#define DEBUG_ASSERT(condition, message) ASSERT(condition, message)
-#define DEBUG_PRINT(msg) do { \
+#define WHEN_DEBUG(condition) condition
+#define ASSERT_DEBUG(condition, message) ASSERT(condition, message)
+#define PRINT_DEBUG(msg) do { \
 std::ostringstream oss__; \
 oss__ << msg; \
 minecraft_debug_print(oss__.str()); \
 } while(0)
-
 #else
-#define DEBUG_ASSERT(condition, message) ((void)0)
-#define DEBUG_PRINT(message) ((void)0)
+#define ASSERT_DEBUG(condition, message) ((void)0)
+#define PRINT_DEBUG(message) ((void)0)
+#define WHEN_DEBUG(condition) ((void)0)
 #endif
 
 

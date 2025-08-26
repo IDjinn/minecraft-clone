@@ -7,24 +7,23 @@
 #include "../../utils/Assert.h"
 
 
-Chunk &World::getChunk(const int x, const int y, const int z) {
-    const auto chunk_id = chunk_index(x, y, z);
-    return getChunk(chunk_id);
+Chunk &World::getChunk(const WorldCoord coords) {
+    return getChunk(chunk_id_from_world_coords(coords));
 }
 
-Chunk &World::getChunk(uint32_t chunk_index) {
-    auto it = chunks.find(chunk_index);
+Chunk &World::getChunk(ChunkId chunk_id) {
+    auto it = chunks.find(chunk_id);
     ASSERT(it != chunks.end(), "Chunk was not found/loaded");
     return *it->second;
 }
 
-bool World::isChunkLoaded(uint32_t chunk_index) {
-    return chunks.find(chunk_index) != chunks.end();
+bool World::isChunkLoaded(ChunkId chunk_id) {
+    return chunks.find(chunk_id) != chunks.end();
 }
 
-bool World::loadChunk(uint32_t chunk_index) {
-    if (isChunkLoaded(chunk_index)) return false;
+bool World::loadChunk(ChunkId chunk_id) {
+    if (isChunkLoaded(chunk_id)) return false;
 
-    chunks[chunk_index] = std::make_unique<Chunk>(chunk_index);
+    chunks[chunk_id] = std::make_unique<Chunk>(chunk_id);
     return true;
 }
