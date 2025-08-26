@@ -6,11 +6,12 @@
 #define MINECRAFT_BLOCK_H
 #include <cstdint>
 
+#include "BlockType.h"
 #include "../../../utils/Assert.h"
 
 class Block {
     uint8_t i;
-    uint8_t blockType;
+    BlockType blockType;
 
 public:
     Block(const Block &) = delete;
@@ -21,11 +22,11 @@ public:
 
     void setIndex(uint64_t index);
 
-    void setBlockType(uint8_t type);
+    void setBlockType(BlockType type);
 
     [[nodiscard]] uint8_t index() const;
 
-    [[nodiscard]] uint8_t block_type() const;
+    [[nodiscard]] BlockType block_type() const;
 
     [[nodiscard]] uint8_t x() const;
 

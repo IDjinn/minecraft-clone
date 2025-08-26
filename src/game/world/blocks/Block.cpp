@@ -10,7 +10,7 @@ void Block::setIndex(const uint64_t index) {
     this->i = index;
 }
 
-void Block::setBlockType(const uint8_t type) {
+void Block::setBlockType(const BlockType type) {
     this->blockType = type;
 }
 
@@ -18,7 +18,7 @@ uint8_t Block::index() const {
     return this->i;
 }
 
-uint8_t Block::block_type() const {
+BlockType Block::block_type() const {
     return blockType;
 }
 

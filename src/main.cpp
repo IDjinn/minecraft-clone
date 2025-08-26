@@ -91,7 +91,7 @@ static bool mouseEnabled;
 static bool spacePressed;
 static bool draw_line;
 
-void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
+void mouse_callback([[maybe_unused]] GLFWwindow *window, double xpos, double ypos) {
     if (!mouseEnabled) return;
 
     if (firstMouse) {
@@ -124,10 +124,14 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     player.cameraFront = glm::normalize(direction);
 }
 
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+void scroll_callback(
+    [[maybe_unused]] GLFWwindow *window,
+    [[maybe_unused]] double xoffset,
+    [[maybe_unused]] double yoffset
+) {
 }
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         mouseEnabled = !mouseEnabled;
         if (mouseEnabled) {
@@ -254,7 +258,7 @@ int main() {
             for (auto x = 0; x < CHUNK_SIZE_X; x++) {
                 for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
                     auto index = Chunk::block_index(x, y, z);
-                    if (auto &block = chunk->blocks[index]; block.block_type() == AIR) continue;
+                    if (auto &block = chunk->blocks[index]; block.block_type() == BlockType::AIR) continue;
 
                     totalCubes++;
                     for (auto face = 0; face < 6; ++face) {
@@ -268,7 +272,7 @@ int main() {
                             ny >= 0 && ny < CHUNK_SIZE_Y &&
                             nz >= 0 && nz < CHUNK_SIZE_Z) {
                             auto neighbor_block_index = Chunk::block_index(nx, ny, nz);
-                            neighborIsSolid = chunk->blocks[neighbor_block_index].block_type() != AIR;
+                            neighborIsSolid = chunk->blocks[neighbor_block_index].block_type() != BlockType::AIR;
                         } else {
                             auto neighbor_x = x + directions[face][0];
                             auto neighbor_y = y + directions[face][1];
@@ -284,7 +288,7 @@ int main() {
                                 auto neighbor_block_z = (neighbor_z + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
                                 auto neighbor_index = Chunk::block_index(
                                     neighbor_block_x, neighbor_block_y, neighbor_block_z);
-                                neighborIsSolid = neighbor_chunk->blocks[neighbor_index].block_type() != AIR;
+                                neighborIsSolid = neighbor_chunk->blocks[neighbor_index].block_type() != BlockType::AIR;
                             }
                         }
 
