@@ -22,8 +22,8 @@
 #define WIDTH 1920
 #define HEIGHT 1024
 
-#define CAMERA_SPEED 5.0f
-#define ZOOM_SPEED 2.0f
+#define PITCH 89.0f
+#define CAMERA_SPEED 10.0f
 
 void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, const int width, const int height) {
     glViewport(0, 0, width, height);
@@ -59,18 +59,8 @@ auto fragmentShaderSource = R"glsl(
 )glsl";
 
 
-float cameraDistance = 15.0f;
-float cameraAngleX = 0.0f;
-float cameraAngleY = 0.0f;
-long long frameCounter = 0;
 
 std::vector<std::string> debug_output;
-
-void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, const double yoffset) {
-    cameraDistance -= static_cast<float>(yoffset) * ZOOM_SPEED;
-    if (cameraDistance < 2.0f) cameraDistance = 2.0f;
-    if (cameraDistance > 50.0f) cameraDistance = 50.0f;
-}
 
 void load_texture(const std::string &texture_name) {
     stbi_set_flip_vertically_on_load(1);
@@ -86,6 +76,98 @@ void load_texture(const std::string &texture_name) {
     }
     stbi_image_free(data);
 }
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 5.0f, 10.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float yaw = -90.0f;
+float pitch = 0.0f;
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
+bool firstMouse = true;
+bool mouseEnabled = true;
+static bool spacePressed = false;
+static bool draw_line = false;
+static float deltaTime = 0.0f;
+static float lastFrame = 0.0f;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (!mouseEnabled) return;
+
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    if (pitch > PITCH)
+        pitch = PITCH;
+    if (pitch < -PITCH)
+        pitch = -PITCH;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        mouseEnabled = !mouseEnabled;
+        if (mouseEnabled) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            firstMouse = true;
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+}
+
+void processInput(GLFWwindow* window, float deltaTime) {
+    float cameraSpeed = CAMERA_SPEED * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        if (!spacePressed) {
+            draw_line = !draw_line;
+            spacePressed = true;
+        }
+    } else {
+        spacePressed = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraUp;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraUp;
+}
+
 
 int main() {
     if (!glfwInit()) {
@@ -110,6 +192,11 @@ int main() {
         std::cerr << "failed to load GLAD\n";
         return -1;
     }
+
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glViewport(0, 0, WIDTH, HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -295,10 +382,6 @@ int main() {
     glBindVertexArray(0);
     glEnable(GL_DEPTH_TEST);
 
-    auto worldCenter = glm::vec3(5.0f, 5.0f, 5.0f);
-    bool draw_line = false;
-    static float deltaTime = 0.0f;
-    static float lastFrame = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0, 0, 0, 0);
@@ -307,43 +390,11 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        frameCounter++;
-        float cameraSpeed = CAMERA_SPEED * deltaTime;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            cameraAngleY += cameraSpeed * 0.5f;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            cameraAngleY -= cameraSpeed * 0.5f;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            cameraAngleX -= cameraSpeed * 0.5f;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            cameraAngleX += cameraSpeed * 0.5f;
-        }
+        auto currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
 
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            worldCenter.y += cameraSpeed;
-        }
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            worldCenter.y -= cameraSpeed;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            worldCenter.x -= cameraSpeed;
-        }
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            worldCenter.x += cameraSpeed;
-        }
-
-        static bool spacePressed = false;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            if (!spacePressed) {
-                draw_line = !draw_line;
-                spacePressed = true;
-            }
-        } else {
-            spacePressed = false;
-        }
+        processInput(window, deltaTime);
 
         glPolygonMode(GL_FRONT_AND_BACK, draw_line ? GL_LINE : GL_FILL);
         glUseProgram(shaderProgram);
@@ -352,35 +403,26 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texture);
         glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 
-        float camX = worldCenter.x + cameraDistance * cos(cameraAngleY) * cos(cameraAngleX);
-        float camY = worldCenter.y + cameraDistance * sin(cameraAngleY);
-        float camZ = worldCenter.z + cameraDistance * cos(cameraAngleY) * sin(cameraAngleX);
+        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),  (float)WIDTH / (float)HEIGHT,  0.1f, 1000.0f);
 
-        auto cameraPos = glm::vec3(camX, camY, camZ);
-        auto target = glm::vec3(0.0f, 0.0f, 0.0f);
-        auto cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-        auto view = glm::lookAt(cameraPos, target, cameraUp);
-        auto projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WIDTH) / HEIGHT, 0.1f, 100.0f);
-
-        const auto viewLoc = glGetUniformLocation(shaderProgram, "view");
+        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-        const auto projLoc = glGetUniformLocation(shaderProgram, "projection");
+        unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindVertexArray(visibleVAO);
         glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
         glBindVertexArray(0);
 
-
-        auto currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
         ImGui::Begin("Debug");
         ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
-        ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 50.0f); {
+        ImGui::Text("Pos: (%.1f, %.1f, %.1f)", cameraPos.x, cameraPos.y, cameraPos.z);
+        ImGui::Text("Yaw: %.1f, Pitch: %.1f", yaw, pitch);
+        ImGui::Text("Mouse: %s", mouseEnabled ? "Enabled" : "Disabled");
+        ImGui::Text("Press ESC to toggle mouse");
+        {
             ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
                               ImGuiWindowFlags_HorizontalScrollbar);
             for (auto &line: debug_output)
