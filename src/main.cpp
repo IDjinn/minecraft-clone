@@ -242,14 +242,14 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    std::vector<float> visibleVertices;
     long long totalCubes = 0;
+    std::vector<float> visibleVertices;
+    visibleVertices.reserve(WORLD_RENDER_VERTICES_RESERVE);
     for (auto &[chunk_index, chunk]: world->chunks) {
         const auto [chunk_x, chunk_y, chunk_z] = World::chunk_id_to_world_coordinates(chunk_index);
         const auto chunk_id = World::chunk_id_from_world_coords({chunk_x, chunk_y, chunk_z});
         ASSERT_DEBUG(chunk_index == chunk_id, "Mismatch chunking id => coordinates");
 
-        visibleVertices.reserve(WORLD_RENDER_VERTICES_RESERVE);
         for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
             for (auto x = 0; x < CHUNK_SIZE_X; x++) {
                 for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
@@ -282,7 +282,8 @@ int main() {
                                 auto neighbor_block_x = (neighbor_x + CHUNK_SIZE_X) % CHUNK_SIZE_X;
                                 auto neighbor_block_y = (neighbor_y + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
                                 auto neighbor_block_z = (neighbor_z + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
-                                auto neighbor_index = Chunk::block_index(neighbor_block_x, neighbor_block_y, neighbor_block_z);
+                                auto neighbor_index = Chunk::block_index(
+                                    neighbor_block_x, neighbor_block_y, neighbor_block_z);
                                 neighborIsSolid = neighbor_chunk->blocks[neighbor_index].block_type() != AIR;
                             }
                         }
@@ -346,7 +347,8 @@ int main() {
         glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 
         glm::mat4 view = glm::lookAt(player.position, player.position + player.cameraFront, player.cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),
+                                                static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 1000.0f);
 
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
