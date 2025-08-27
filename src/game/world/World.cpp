@@ -55,13 +55,13 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
     }
 
     for (auto& [chunk_id, chunk] : this->chunks) {
-        if (visible_chunks.find(id) == visible_chunks.end()) {
-            chunks_to_unload.insert(id);
+        if (visible_chunks.find(chunk_id) == visible_chunks.end()) {
+            chunks_to_unload.insert(chunk_id);
         }
     }
 
-    for (auto& id : chunks_to_unload) {
-        unload_chunk(id);
+    for (auto &chunk_id: chunks_to_unload) {
+        unload_chunk(chunk_id);
     }
 
 }
