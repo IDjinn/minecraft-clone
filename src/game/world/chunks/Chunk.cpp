@@ -16,16 +16,9 @@ std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
     auto world = world_ptr.lock();
     ASSERT_DEBUG(world, "world is invalid");
 
-    // ASSERT_DEBUG(chunks.size()>0, "invalid world chunks");
-    // for (auto &[chunk_index, chunk]: chunks) {
     const auto [chunk_x, chunk_y, chunk_z] = World::chunk_id_to_world_coordinates(this->id);
-
-    // chunk coordinate system tests
-    {
-        WHEN_DEBUG(const auto chunk_id = World::chunk_id_from_world_coords({chunk_x, chunk_y, chunk_z}));
-        ASSERT_DEBUG(this->id == chunk_id, "Mismatch chunking id => coordinates");
-    }
-    //
+    WHEN_DEBUG(const auto chunk_id = World::world_coords_to_chunk_id({chunk_x, chunk_y, chunk_z}));
+    ASSERT_DEBUG(this->id == chunk_id, "Mismatch chunking id => coordinates");
 
     for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
         for (auto x = 0; x < CHUNK_SIZE_X; x++) {
@@ -49,7 +42,7 @@ std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
                         auto neighbor_x = x + directions[face][0];
                         auto neighbor_y = y + directions[face][1];
                         auto neighbor_z = z + directions[face][2];
-                        auto neighbor_chunk_id = World::chunk_id_from_world_coords(
+                        auto neighbor_chunk_id = World::world_coords_to_chunk_id(
                             {chunk_x + neighbor_x, chunk_y + neighbor_y, chunk_z + neighbor_z}
                         );
 

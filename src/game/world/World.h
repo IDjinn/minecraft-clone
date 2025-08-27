@@ -36,11 +36,11 @@ struct World : public std::enable_shared_from_this<World>{
     void check_chunk_lifetimes(const glm::vec3 center_position);
     void load_chunk(int32_t chunk_id);
     void unload_chunk(const int32_t id);
-    [[nodiscard]] bool isChunkLoaded(int32_t chunk_id);
+    [[nodiscard]] bool is_chunk_loaded(int32_t chunk_id);
     [[nodiscard]] Chunk &get_chunk(int32_t chunk_id);
     [[nodiscard]] Chunk &get_chunk(WorldCoord coords);
 
-    static constexpr int32_t chunk_id_from_world_coords(const WorldCoord coord);
+    static constexpr int32_t world_coords_to_chunk_id(const WorldCoord coord);
     static constexpr WorldCoord chunk_id_to_world_coordinates(const int32_t id);
     static constexpr bool isOutOfBounds(const int x, const int y, const int z);
 };

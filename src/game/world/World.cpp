@@ -36,7 +36,7 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
     for (auto y = minY; y < maxY; y += CHUNK_SIZE_Y) {
         for (auto x = minX; x < maxX; x += CHUNK_SIZE_X) {
             for (auto z = minZ; z < maxZ; z += CHUNK_SIZE_Z) {
-                const auto chunk_id = chunk_id_from_world_coords({x, y, z});
+                const auto chunk_id = world_coords_to_chunk_id({x, y, z});
                 load_chunk(chunk_id);
 
                 auto &chunk = get_chunk(chunk_id);
@@ -65,7 +65,7 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
     }
 }
 
-constexpr int32_t World::chunk_id_from_world_coords(const WorldCoord coord) {
+constexpr int32_t World::world_coords_to_chunk_id(const WorldCoord coord) {
     const auto chunkX = coord.x / CHUNK_SIZE_X;
     const auto chunkY = coord.y / CHUNK_SIZE_Y;
     const auto chunkZ = coord.z / CHUNK_SIZE_Z;
@@ -100,7 +100,7 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
 }
 
 Chunk &World::get_chunk(const WorldCoord coords) {
-    return get_chunk(chunk_id_from_world_coords(coords));
+    return get_chunk(world_coords_to_chunk_id(coords));
 }
 
 Chunk &World::get_chunk(int32_t chunk_id) {
@@ -109,12 +109,12 @@ Chunk &World::get_chunk(int32_t chunk_id) {
     return *it->second;
 }
 
-bool World::isChunkLoaded(int32_t chunk_id) {
+bool World::is_chunk_loaded(int32_t chunk_id) {
     return chunks.find(chunk_id) != chunks.end();
 }
 
 void World::load_chunk(int32_t chunk_id) {
-    if (isChunkLoaded(chunk_id)) return;
+    if (is_chunk_loaded(chunk_id)) return;
 
     chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, shared_from_this());
     chunks[chunk_id]->initialize_blocks();
@@ -125,4 +125,5 @@ void World::unload_chunk(const int32_t id) {
     this->chunks.erase(id);
     this->chunk_visible_vertices.erase(id);
     PRINT_DEBUG("unloaded chunk=" << id);
+    WHEN_DEBUG(std::cout << std::flush);
 }
