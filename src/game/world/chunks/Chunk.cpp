@@ -7,10 +7,6 @@
 #include "../World.h"
 
 Chunk::~Chunk() {
-    if (const auto world = this->world_ptr.lock()) {
-        world->chunk_visible_vertices.erase(this->id);
-    }
-    PRINT_DEBUG("unload vertices " << this->id);
 }
 
 std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {

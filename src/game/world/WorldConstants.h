@@ -14,7 +14,7 @@
 #define CHUNK_SIZE_Z 16
 
 #define WORLD_SPAWN_COORDS glm::vec3(1000, 100, 1000)
-#define WORLD_SPAWN_RENDER_CHUNKS (glm::vec3(5, 1, 5) * (float)CHUNK_SIZE_X)
+#define WORLD_RENDER_DISTANCE_BLOCKS (glm::vec3(5, 1, 5) * (float)CHUNK_SIZE_X)
 #define WORLD_RENDER_VERTICES_RESERVE 300000
 
 

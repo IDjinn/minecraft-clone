@@ -21,7 +21,7 @@ enum class ChunkState {
 };
 
 struct Chunk {
-    int32_t id{};
+    int32_t id;
     std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
     ChunkState state = ChunkState::UNKNOWN;
 

@@ -9,7 +9,7 @@
 #include "../../utils/Assert.h"
 
 
-World::World(const uint8_t id, const glm::vec3 &spawn_point): id(id), spawn_point(spawn_point) {
+World::World(const uint8_t id, const glm::vec3 &spawn_point) : id(id), spawn_point(spawn_point) {
 }
 
 void World::add_player(const std::shared_ptr<Player> &player) {
@@ -21,8 +21,8 @@ void World::add_player(const std::shared_ptr<Player> &player) {
 }
 
 void World::check_chunk_lifetimes(const glm::vec3 center_position) {
-    const auto world_min_boundary = center_position - WORLD_SPAWN_RENDER_CHUNKS;
-    const auto world_max_boundary = center_position + WORLD_SPAWN_RENDER_CHUNKS;
+    const auto world_min_boundary = center_position - WORLD_RENDER_DISTANCE_BLOCKS;
+    const auto world_max_boundary = center_position + WORLD_RENDER_DISTANCE_BLOCKS;
 
     const auto minX = std::max(static_cast<int>(world_min_boundary.x), 0);
     const auto minY = std::max(static_cast<int>(world_min_boundary.y), 0);
@@ -33,7 +33,6 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
     const auto maxZ = static_cast<int>(world_max_boundary.z);
 
     std::unordered_set<int32_t> visible_chunks;
-    std::unordered_set<int32_t> chunks_to_unload;
     for (auto y = minY; y < maxY; y += CHUNK_SIZE_Y) {
         for (auto x = minX; x < maxX; x += CHUNK_SIZE_X) {
             for (auto z = minZ; z < maxZ; z += CHUNK_SIZE_Z) {
@@ -54,16 +53,16 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
         }
     }
 
-    for (auto& [chunk_id, chunk] : this->chunks) {
+    std::unordered_set<int32_t> chunks_to_unload;
+    for (auto &[chunk_id, chunk]: this->chunks) {
         if (visible_chunks.find(chunk_id) == visible_chunks.end()) {
             chunks_to_unload.insert(chunk_id);
         }
     }
 
-    for (auto &chunk_id: chunks_to_unload) {
-        unload_chunk(chunk_id);
+    for (auto chunk_id_to_unload: chunks_to_unload) {
+        unload_chunk(chunk_id_to_unload);
     }
-
 }
 
 constexpr int32_t World::chunk_id_from_world_coords(const WorldCoord coord) {
@@ -92,9 +91,9 @@ uint32_t World::generate_entity_id() {
     return ++id;
 }
 
-std::unique_ptr<std::vector<float>> World::generate_visible_vertices() {
-    auto vertices = std::make_unique<std::vector<float>>();
-    for (auto &[chunk_id, chunk_vertices] : this->chunk_visible_vertices) {
+std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
+    auto vertices = std::make_unique<std::vector<float> >();
+    for (auto &[chunk_id, chunk_vertices]: this->chunk_visible_vertices) {
         vertices->insert(vertices->end(), chunk_vertices->begin(), chunk_vertices->end());
     }
     return vertices;
@@ -123,6 +122,7 @@ void World::load_chunk(int32_t chunk_id) {
 }
 
 void World::unload_chunk(const int32_t id) {
-    chunks.erase(id);
+    this->chunks.erase(id);
+    this->chunk_visible_vertices.erase(id);
     PRINT_DEBUG("unloaded chunk=" << id);
 }
