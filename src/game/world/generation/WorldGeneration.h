@@ -18,11 +18,12 @@ struct WorldGeneration {
     FastNoise::SmartNode<FastNoise::Simplex> fnGenerator;
     long seed;
 
-    WorldGeneration(long seed);
+    explicit WorldGeneration(long seed);
 
     std::unique_ptr<Chunk> load_chunk(const std::weak_ptr<World> &world, int32_t chunk_id);
 
-   std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > generate_chunks_around(const std::weak_ptr<World> &world, glm::vec3 position);
+    std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > generate_chunks_around(
+        const std::weak_ptr<World> &world, glm::vec3 position);
 };
 
 

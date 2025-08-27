@@ -35,7 +35,7 @@ struct Player {
 
     Player(const uint32_t id, std::string name, glm::vec3 position);
 
-    void on_enter_new_chunk(int32_t chunk_id);
+    void on_enter_new_chunk(int32_t chunk_id) const;
 
     void processInput(GLFWwindow *window, float deltaTime);
 

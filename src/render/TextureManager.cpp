@@ -8,7 +8,7 @@
 
 void TextureManager::load_textures() {
     load_texture("blocks/grass.png");
-    load_texture("blocks/stone.png");
+    // load_texture("blocks/stone.png");
 }
 
 void TextureManager::load_texture(const std::string &texture_name) {

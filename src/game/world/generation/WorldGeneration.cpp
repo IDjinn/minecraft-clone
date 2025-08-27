@@ -17,6 +17,9 @@ WorldGeneration::WorldGeneration(const long seed) : seed(seed) {
 std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &world, int32_t chunk_id) {
     auto chunk = std::make_unique<Chunk>(chunk_id, world);
     auto [chunkX, chunkY, chunkZ] = chunk_id_to_world_coordinates(chunk_id);
+    WHEN_DEBUG(auto expected_chunk_id = world_coords_to_chunk_id({chunkX, chunkY, chunkZ}));
+    ASSERT_DEBUG(expected_chunk_id == chunk_id, "failed matching chunk => world coordinate system");
+
     fnGenerator->GenUniformGrid2D(
         heightMap.data(),
         chunkX * CHUNK_SIZE_X,
@@ -41,7 +44,7 @@ std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &w
 
                 if (y <= terrainHeight) {
                     // if (y == terrainHeight) {
-                    chunk->blocks[index].setBlockType(BlockType::GRASS);
+                    chunk->blocks[index].setBlockType(BlockType::DIRT);
                     // } else if (y >= terrainHeight - 3) {
                     // chunk->blocks[index].setBlockType(BlockType::DIRT);
                     // } else {
@@ -80,7 +83,8 @@ std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > WorldGene
                 chunks[chunk_id] = load_chunk(world, chunk_id);
 
                 auto [world_x, world_y, world_z] = chunk_id_to_world_coordinates(chunk_id);
-                PRINT_DEBUG(
+                ASSERT_DEBUG(x == world_x && y == world_y && z == world_z, "world chunk coordinate system failed");
+                PRINT_DEBUG_IF(WORLD_DEBUG_FLAG,
                     "loaded chunk=" << chunk_id <<" at x=" << x << " y=" << y << " z=" << z << " (" << world_x <<
                     ", "
                     << world_y << ", " << world_z<<")");

@@ -63,7 +63,7 @@ void World::check_chunk_lifetimes(const glm::vec3 center_position) {
 void World::unload_chunk(const int32_t id) {
     this->chunks.erase(id);
     this->chunk_visible_vertices.erase(id);
-    PRINT_DEBUG("unloaded chunk=" << id);
+    PRINT_DEBUG_IF(WORLD_DEBUG_FLAG, "unloaded chunk=" << id);
     WHEN_DEBUG(std::cout << std::flush);
 }
 

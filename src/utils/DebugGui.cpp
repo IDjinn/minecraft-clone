@@ -8,6 +8,7 @@
 
 #include "Assert.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "../game/players/Player.h"
 #include "../render/Render.h"
 #include "imgui/imgui.h"
@@ -30,19 +31,24 @@ void DebugGui::prepare() {
     ImGui::NewFrame();
 }
 
-void DebugGui::render(const Render *render, const std::shared_ptr<Player> &player) {
+void DebugGui::render(const Render *render, const std::weak_ptr<World> &world_ptr,
+                      const std::shared_ptr<Player> &player) {
+    auto world = world_ptr.lock();
+    ASSERT_DEBUG(world, "world == nullptr");
+
     ImGui::Begin("Debug");
     ImGui::Text("FPS: %.1f", 1.0f / render->delta_time);
     ImGui::Text("Pos: (%.1f, %.1f, %.1f)", player->position.x, player->position.y, player->position.z);
     ImGui::Text("Yaw: %.1f, Pitch: %.1f", render->yaw, render->pitch);
     ImGui::Text("Mouse: %s", render->mouseEnabled ? "Enabled" : "Disabled");
-    ImGui::Text("Press ESC to toggle mouse"); {
-        ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
-                          ImGuiWindowFlags_HorizontalScrollbar);
-        for (auto &line: debug_output)
-            ImGui::TextUnformatted(line.c_str());
-        ImGui::EndChild();
-    }
+    ImGui::Text("Press ESC to toggle mouse");
+    // {
+    //     ImGui::BeginChild("Console", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
+    //                       ImGuiWindowFlags_HorizontalScrollbar | ImGuiNextWindowDataFlags_HasCollapsed);
+    //     for (auto &line: debug_output)
+    //         ImGui::TextUnformatted(line.c_str());
+    //     ImGui::EndChild();
+    // }
     ImGui::End();
 
     ImGui::Render();

@@ -148,7 +148,7 @@ void Render::render() {
     glDrawArrays(GL_TRIANGLES, 0, vertices->size());
     glBindVertexArray(0);
 
-    DebugGui::render(this, player);
+    DebugGui::render(this, current_world, player);
     glfwSwapBuffers(window);
     glfwPollEvents();
 }

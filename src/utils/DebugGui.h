@@ -19,7 +19,7 @@ struct DebugGui {
 
     static void prepare();
 
-    static void render(const Render *, const std::shared_ptr<Player> &player);
+    static void render(const Render *render, const std::weak_ptr<World> &world, const std::shared_ptr<Player> &player);
 
     static void destroy();
 };

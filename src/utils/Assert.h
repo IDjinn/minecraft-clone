@@ -10,11 +10,13 @@
 #include <sstream>
 
 #define MINECRAFT_DEBUG 1
+#define WORLD_DEBUG_FLAG 0
 
+#define MINECRAFT_DEBUG_CONSOLE_HEIGHT 10
 extern std::vector<std::string> debug_output;
 
 inline void minecraft_debug_print(const std::string &message) {
-    if (!debug_output.empty() && debug_output.size() > 20)
+    if (!debug_output.empty() && debug_output.size() > MINECRAFT_DEBUG_CONSOLE_HEIGHT)
         debug_output.erase(debug_output.begin());
 
     debug_output.push_back(message);
@@ -55,6 +57,7 @@ std::abort(); \
 #if MINECRAFT_DEBUG
 #define WHEN_DEBUG(code) code
 #define ASSERT_DEBUG(condition, message) ASSERT(condition, message)
+#define PRINT_DEBUG_IF(condition, msg) if (condition) { PRINT_DEBUG(msg); }
 #define PRINT_DEBUG(msg) do { \
 std::ostringstream oss__; \
 oss__ << msg; \
@@ -63,6 +66,7 @@ minecraft_debug_print(oss__.str()); \
 #else
 #define ASSERT_DEBUG(condition, message) ((void)0)
 #define PRINT_DEBUG(message) ((void)0)
+#define PRINT_DEBUG_IF(condition, msg) ((void)0)
 #define WHEN_DEBUG(code) ((void)0)
 #endif
 
