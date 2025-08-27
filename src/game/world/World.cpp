@@ -7,6 +7,8 @@
 #include <unordered_set>
 
 #include "../../utils/Assert.h"
+#include "chunks/Chunk.h"
+#include "chunks/Chunk.h"
 #include "generation/WorldGeneration.h"
 
 
@@ -37,7 +39,13 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
     return vertices;
 }
 
-void World::check_chunk_lifetimes(const glm::vec3 center_position) {
+void World::check_chunk_lifetimes(glm::vec3 center_position) {
+    WHEN_DEBUG(const auto center_chunk_id = world_coords_to_chunk_id({static_cast<int>(center_position.x),static_cast<int>(center_position.y), static_cast<int>(center_position.z)}));
+    PRINT_DEBUG(
+        "World::check_chunk_lifetimes | id=" << center_chunk_id <<" (x=" << center_position.x<< ", y=" << center_position.y << ", z=" <<
+        center_position.z<<")");
+    WHEN_DEBUG(std::cout << std::flush);
+
     std::unordered_set<int32_t> chunks_to_unload{};
     auto visible_chunks = world_generation->generate_chunks_around(
         this->shared_from_this(), center_position);

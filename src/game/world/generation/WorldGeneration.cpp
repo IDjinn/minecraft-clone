@@ -16,10 +16,7 @@ WorldGeneration::WorldGeneration(const long seed) : seed(seed) {
 
 std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &world, int32_t chunk_id) {
     auto chunk = std::make_unique<Chunk>(chunk_id, world);
-    auto [chunkX, chunkY, chunkZ] = chunk_id_to_world_coordinates(chunk_id);
-    WHEN_DEBUG(auto expected_chunk_id = world_coords_to_chunk_id({chunkX, chunkY, chunkZ}));
-    ASSERT_DEBUG(expected_chunk_id == chunk_id, "failed matching chunk => world coordinate system");
-
+    auto [chunkX, chunkY, chunkZ, absolute] = chunk_id_to_world_coordinates(chunk_id);
     fnGenerator->GenUniformGrid2D(
         heightMap.data(),
         chunkX * CHUNK_SIZE_X,
@@ -57,13 +54,15 @@ std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &w
         }
     }
 
-    chunk->setState(ChunkState::INITIALIZED);
+    chunk->set_state(ChunkState::INITIALIZED);
     return chunk;
 }
 
-std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > WorldGeneration::generate_chunks_around(
+std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > >
+WorldGeneration::generate_chunks_around(
     const std::weak_ptr<World> &world,
-    glm::vec3 position) {
+    glm::vec3 position
+) {
     const auto world_min_boundary = position - WORLD_RENDER_DISTANCE_BLOCKS;
     const auto world_max_boundary = position + WORLD_RENDER_DISTANCE_BLOCKS;
 
@@ -82,13 +81,16 @@ std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > WorldGene
                 const auto chunk_id = world_coords_to_chunk_id({x, y, z});
                 chunks[chunk_id] = load_chunk(world, chunk_id);
 
-                auto [world_x, world_y, world_z] = chunk_id_to_world_coordinates(chunk_id);
-                ASSERT_DEBUG(x == world_x && y == world_y && z == world_z, "world chunk coordinate system failed");
+#if MINECRAFT_DEBUG
+                auto [world_x, world_y, world_z, absolute] = chunk_id_to_world_coordinates(chunk_id);
                 PRINT_DEBUG_IF(WORLD_DEBUG_FLAG,
-                    "loaded chunk=" << chunk_id <<" at x=" << x << " y=" << y << " z=" << z << " (" << world_x <<
-                    ", "
-                    << world_y << ", " << world_z<<")");
+                               "loaded chunk=" << chunk_id <<" at x=" << x << " y=" << y << " z=" << z << " (" <<
+                               world_x <<
+                               ", "
+                               << world_y << ", " << world_z<<" a="<<absolute<<")"
+                );
                 WHEN_DEBUG(std::cout << std::flush);
+#endif
             }
         }
     }

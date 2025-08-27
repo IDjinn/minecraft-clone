@@ -1,2 +1,5 @@
 imgui.ini
 cmake-build-debug
+
+.idea
+build

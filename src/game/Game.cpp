@@ -8,7 +8,7 @@ Game::Game() : player(std::make_shared<Player>(World::generate_entity_id(), "IDj
                world(std::make_shared<World>(OVERWORLD, WORLD_SPAWN_COORDS)),
                render(std::make_shared<Render>(this->world)) {
     PRINT_DEBUG("loading game..\nDEBUG: " << MINECRAFT_DEBUG << "\nWORLD_DEBUG: " << WORLD_DEBUG_FLAG);
-    world->check_chunk_lifetimes(WORLD_SPAWN_COORDS);
+    world->check_chunk_lifetimes(player->position);
     player->current_world = world;
     world->add_player(player);
 }

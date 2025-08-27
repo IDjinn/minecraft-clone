@@ -1,9 +1,6 @@
 [submodule "include/imgui"]
 	path = include/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "external/FastNoise2"]
-	path = external/FastNoise2
-	url = https://github.com/Auburn/FastNoise2.git
 [submodule "include/FastNoise2"]
 	path = include/FastNoise2
 	url = https://github.com/Auburn/FastNoise2.git
