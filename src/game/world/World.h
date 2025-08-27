@@ -7,16 +7,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include "chunks/Chunk.h"
 #include "glm/vec3.hpp"
 #include "../players/Player.h"
-
+#include "generation/WorldGeneration.h"
+struct WorldGeneration;
 struct Player;
 struct Chunk;
+struct WorldCoord;
 
-struct WorldCoord {
-    int32_t x, y, z;
-};
 
 struct World : public std::enable_shared_from_this<World>{
     uint8_t id;
@@ -24,6 +22,7 @@ struct World : public std::enable_shared_from_this<World>{
     std::vector<std::shared_ptr<Player>> players;
     std::unordered_map<int32_t, std::unique_ptr<Chunk>> chunks{};
     std::unordered_map<int32_t, std::unique_ptr<std::vector<float>>> chunk_visible_vertices{};
+    std::unique_ptr<WorldGeneration> world_generation;
 
     World(uint8_t id, const glm::vec3 &spawn_point);
 
@@ -34,15 +33,13 @@ struct World : public std::enable_shared_from_this<World>{
     std::unique_ptr<std::vector<float>> generate_visible_vertices();
 
     void check_chunk_lifetimes(const glm::vec3 center_position);
-    void load_chunk(int32_t chunk_id);
     void unload_chunk(const int32_t id);
+
     [[nodiscard]] bool is_chunk_loaded(int32_t chunk_id);
+
     [[nodiscard]] Chunk &get_chunk(int32_t chunk_id);
     [[nodiscard]] Chunk &get_chunk(WorldCoord coords);
 
-    static constexpr int32_t world_coords_to_chunk_id(const WorldCoord coord);
-    static constexpr WorldCoord chunk_id_to_world_coordinates(const int32_t id);
-    static constexpr bool isOutOfBounds(const int x, const int y, const int z);
 };
 
 

@@ -16,8 +16,8 @@ std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
     auto world = world_ptr.lock();
     ASSERT_DEBUG(world, "world is invalid");
 
-    const auto [chunk_x, chunk_y, chunk_z] = World::chunk_id_to_world_coordinates(this->id);
-    WHEN_DEBUG(const auto chunk_id = World::world_coords_to_chunk_id({chunk_x, chunk_y, chunk_z}));
+    const auto [chunk_x, chunk_y, chunk_z] = chunk_id_to_world_coordinates(this->id);
+    WHEN_DEBUG(const auto chunk_id = world_coords_to_chunk_id({chunk_x, chunk_y, chunk_z}));
     ASSERT_DEBUG(this->id == chunk_id, "Mismatch chunking id => coordinates");
 
     for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -42,7 +42,7 @@ std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
                         auto neighbor_x = x + directions[face][0];
                         auto neighbor_y = y + directions[face][1];
                         auto neighbor_z = z + directions[face][2];
-                        auto neighbor_chunk_id = World::world_coords_to_chunk_id(
+                        auto neighbor_chunk_id = world_coords_to_chunk_id(
                             {chunk_x + neighbor_x, chunk_y + neighbor_y, chunk_z + neighbor_z}
                         );
 
@@ -84,20 +84,6 @@ const Block *Chunk::getBlock(const uint8_t index) const {
 
 ChunkState Chunk::getState() const {
     return state;
-}
-
-void Chunk::initialize_blocks() {
-    for (int x = 0; x < CHUNK_SIZE_X; x++) {
-        for (int y = 0; y < CHUNK_SIZE_Y; y++) {
-            for (int z = 0; z < CHUNK_SIZE_Z; z++) {
-                int index = block_index(x, y, z);
-                blocks[index].setIndex(index);
-                blocks[index].setBlockType(BlockType::DIRT);
-            }
-        }
-    }
-
-    this->setState(ChunkState::INITIALIZED);
 }
 
 void Chunk::setState(const ChunkState newState) {

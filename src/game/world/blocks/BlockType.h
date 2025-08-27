@@ -7,8 +7,10 @@
 
 enum class BlockType: uint8_t {
     AIR = 0,
+
     GRASS,
     DIRT,
+    STONE,
 };
 
 #endif //MINECRAFT_BLOCKTYPE_H

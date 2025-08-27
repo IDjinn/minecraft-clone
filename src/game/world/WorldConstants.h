@@ -17,6 +17,33 @@
 #define WORLD_RENDER_DISTANCE_BLOCKS (glm::vec3(5, 1, 5) * (float)CHUNK_SIZE_X)
 #define WORLD_RENDER_VERTICES_RESERVE 300000
 
+#define WORLD_TERRAIN_MAX_HEIGHT 120
+#define WORLD_TERRAIN_MIN_HEIGHT 1
+
+struct WorldCoord {
+    int32_t x, y, z;
+};
+
+constexpr int32_t world_coords_to_chunk_id(const WorldCoord coord) {
+    const auto chunkX = coord.x / CHUNK_SIZE_X;
+    const auto chunkY = coord.y / CHUNK_SIZE_Y;
+    const auto chunkZ = coord.z / CHUNK_SIZE_Z;
+
+    return chunkX + (WORLD_SIZE_X * chunkY) + (WORLD_SIZE_X * WORLD_SIZE_Y * chunkZ);
+}
+
+constexpr WorldCoord chunk_id_to_world_coordinates(const int32_t id) {
+    const auto chunkZ = id / (WORLD_SIZE_X * WORLD_SIZE_Y);
+    const auto remaining = id % (WORLD_SIZE_X * WORLD_SIZE_Y);
+    const auto chunkY = remaining / WORLD_SIZE_X;
+    const auto chunkX = remaining % WORLD_SIZE_X;
+
+    return {chunkX * CHUNK_SIZE_X, chunkY * CHUNK_SIZE_Y, chunkZ * CHUNK_SIZE_Z};
+}
+
+constexpr bool isOutOfBounds(const int x, const int y, const int z) {
+    return x >= WORLD_SIZE_X || y >= WORLD_SIZE_Y || z >= WORLD_SIZE_Z || x < 0 || y < 0 || z < 0;
+}
 
 const float faceVertices[6][30] = {
     // front face (z+) - posição + tex coords

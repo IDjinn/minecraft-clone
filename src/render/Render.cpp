@@ -63,7 +63,7 @@ Render::Render(const std::weak_ptr<World> &current_world) : current_world(curren
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    textureManager.load_texture("grass.png");
+    textureManager.load_textures();
     const auto vertexShaderSource = shaderManager.load_shader("shader.vert");
     const auto fragmentShaderSource = shaderManager.load_shader("shader.frag");
 

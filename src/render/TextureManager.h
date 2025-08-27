@@ -11,7 +11,9 @@
 #include "stb_image/stb_image.h"
 
 struct TextureManager {
-    static void load_texture(const std::string &texture_name);
+    void load_textures();
+
+    void load_texture(const std::string &texture_name);
 };
 
 

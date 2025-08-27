@@ -44,8 +44,6 @@ struct Chunk {
 
     [[nodiscard]] ChunkState getState() const;
 
-    void initialize_blocks();
-
     void setState(const ChunkState newState);
 
     void set_index(uint8_t chunk_index);

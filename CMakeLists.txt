@@ -30,14 +30,19 @@ add_executable(minecraft
         src/render/ShaderManager.h
         src/game/Game.cpp
         src/game/Game.h
+        src/game/world/generation/WorldGeneration.cpp
+        src/game/world/generation/WorldGeneration.h
 )
 
+add_subdirectory(include/FastNoise2)
 target_include_directories(minecraft PRIVATE
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/include/imgui
         ${CMAKE_SOURCE_DIR}/include/imgui/backends
         ${CMAKE_SOURCE_DIR}/glfw/include
+        ${CMAKE_SOURCE_DIR}/include/FastNoise2/include
 )
+
 target_sources(minecraft PRIVATE
         ${CMAKE_SOURCE_DIR}/include/imgui/imgui.cpp
         ${CMAKE_SOURCE_DIR}/include/imgui/imgui_draw.cpp
@@ -50,8 +55,8 @@ target_link_libraries(minecraft
         ${CMAKE_SOURCE_DIR}/glfw/lib-mingw-w64/libglfw3.a
         opengl32
         gdi32
+        FastNoise
 )
-
 
 target_include_directories(minecraft PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

@@ -53,7 +53,7 @@ void Player::processInput(GLFWwindow *window, float deltaTime) {
 }
 
 int32_t Player::get_current_chunk_id() const {
-    return World::world_coords_to_chunk_id({
+    return world_coords_to_chunk_id({
         static_cast<int>(position.x), static_cast<int>(position.y), static_cast<int>(position.z)
     });
 }

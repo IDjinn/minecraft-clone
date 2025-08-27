@@ -7,9 +7,13 @@
 #include <unordered_set>
 
 #include "../../utils/Assert.h"
+#include "generation/WorldGeneration.h"
 
 
-World::World(const uint8_t id, const glm::vec3 &spawn_point) : id(id), spawn_point(spawn_point) {
+World::World(const uint8_t id, const glm::vec3 &spawn_point) : id(id),
+                                                               spawn_point(spawn_point),
+                                                               world_generation(
+                                                                   std::make_unique<WorldGeneration>(1234l)) {
 }
 
 void World::add_player(const std::shared_ptr<Player> &player) {
@@ -18,72 +22,6 @@ void World::add_player(const std::shared_ptr<Player> &player) {
         position.y << ", " << player->position.z << ")");
     WHEN_DEBUG(std::cout << std::flush);
     players.push_back(player);
-}
-
-void World::check_chunk_lifetimes(const glm::vec3 center_position) {
-    const auto world_min_boundary = center_position - WORLD_RENDER_DISTANCE_BLOCKS;
-    const auto world_max_boundary = center_position + WORLD_RENDER_DISTANCE_BLOCKS;
-
-    const auto minX = std::max(static_cast<int>(world_min_boundary.x), 0);
-    const auto minY = std::max(static_cast<int>(world_min_boundary.y), 0);
-    const auto minZ = std::max(static_cast<int>(world_min_boundary.z), 0);
-
-    const auto maxX = static_cast<int>(world_max_boundary.x);
-    const auto maxY = static_cast<int>(world_max_boundary.y);
-    const auto maxZ = static_cast<int>(world_max_boundary.z);
-
-    std::unordered_set<int32_t> visible_chunks;
-    for (auto y = minY; y < maxY; y += CHUNK_SIZE_Y) {
-        for (auto x = minX; x < maxX; x += CHUNK_SIZE_X) {
-            for (auto z = minZ; z < maxZ; z += CHUNK_SIZE_Z) {
-                const auto chunk_id = world_coords_to_chunk_id({x, y, z});
-                load_chunk(chunk_id);
-
-                auto &chunk = get_chunk(chunk_id);
-                chunk.set_index(chunk_id);
-
-                visible_chunks.insert(chunk_id);
-                auto [world_x, world_y, world_z] = chunk_id_to_world_coordinates(chunk_id);
-                PRINT_DEBUG(
-                    "loaded chunk=" << chunk_id <<" at x=" << x << " y=" << y << " z=" << z << " (" << world_x <<
-                    ", "
-                    << world_y << ", " << world_z<<")");
-                WHEN_DEBUG(std::cout << std::flush);
-            }
-        }
-    }
-
-    std::unordered_set<int32_t> chunks_to_unload;
-    for (auto &[chunk_id, chunk]: this->chunks) {
-        if (visible_chunks.find(chunk_id) == visible_chunks.end()) {
-            chunks_to_unload.insert(chunk_id);
-        }
-    }
-
-    for (auto chunk_id_to_unload: chunks_to_unload) {
-        unload_chunk(chunk_id_to_unload);
-    }
-}
-
-constexpr int32_t World::world_coords_to_chunk_id(const WorldCoord coord) {
-    const auto chunkX = coord.x / CHUNK_SIZE_X;
-    const auto chunkY = coord.y / CHUNK_SIZE_Y;
-    const auto chunkZ = coord.z / CHUNK_SIZE_Z;
-
-    return chunkX + (WORLD_SIZE_X * chunkY) + (WORLD_SIZE_X * WORLD_SIZE_Y * chunkZ);
-}
-
-constexpr WorldCoord World::chunk_id_to_world_coordinates(const int32_t id) {
-    const auto chunkZ = id / (WORLD_SIZE_X * WORLD_SIZE_Y);
-    const auto remaining = id % (WORLD_SIZE_X * WORLD_SIZE_Y);
-    const auto chunkY = remaining / WORLD_SIZE_X;
-    const auto chunkX = remaining % WORLD_SIZE_X;
-
-    return {chunkX * CHUNK_SIZE_X, chunkY * CHUNK_SIZE_Y, chunkZ * CHUNK_SIZE_Z};
-}
-
-constexpr bool World::isOutOfBounds(const int x, const int y, const int z) {
-    return x >= WORLD_SIZE_X || y >= WORLD_SIZE_Y || z >= WORLD_SIZE_Z || x < 0 || y < 0 || z < 0;
 }
 
 uint32_t World::generate_entity_id() {
@@ -99,8 +37,38 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
     return vertices;
 }
 
-Chunk &World::get_chunk(const WorldCoord coords) {
-    return get_chunk(world_coords_to_chunk_id(coords));
+void World::check_chunk_lifetimes(const glm::vec3 center_position) {
+    std::unordered_set<int32_t> chunks_to_unload{};
+    auto visible_chunks = world_generation->generate_chunks_around(
+        this->shared_from_this(), center_position);
+
+    for (auto &[chunk_id, chunk]: *visible_chunks) {
+        this->chunks[chunk_id] = std::move(chunk);
+    }
+
+    for (auto &[chunk_id, chunk]: this->chunks) {
+        if (visible_chunks->find(chunk_id) == visible_chunks->end()) {
+            chunks_to_unload.insert(chunk_id);
+            continue;
+        }
+
+        this->chunk_visible_vertices[chunk_id] = chunk->generate_visible_vertices();
+    }
+
+    for (const auto chunk_id_to_unload: chunks_to_unload) {
+        unload_chunk(chunk_id_to_unload);
+    }
+}
+
+void World::unload_chunk(const int32_t id) {
+    this->chunks.erase(id);
+    this->chunk_visible_vertices.erase(id);
+    PRINT_DEBUG("unloaded chunk=" << id);
+    WHEN_DEBUG(std::cout << std::flush);
+}
+
+bool World::is_chunk_loaded(int32_t chunk_id) {
+    return chunks.find(chunk_id) != chunks.end();
 }
 
 Chunk &World::get_chunk(int32_t chunk_id) {
@@ -109,21 +77,6 @@ Chunk &World::get_chunk(int32_t chunk_id) {
     return *it->second;
 }
 
-bool World::is_chunk_loaded(int32_t chunk_id) {
-    return chunks.find(chunk_id) != chunks.end();
-}
-
-void World::load_chunk(int32_t chunk_id) {
-    if (is_chunk_loaded(chunk_id)) return;
-
-    chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, shared_from_this());
-    chunks[chunk_id]->initialize_blocks();
-    this->chunk_visible_vertices[chunk_id] = chunks[chunk_id]->generate_visible_vertices();
-}
-
-void World::unload_chunk(const int32_t id) {
-    this->chunks.erase(id);
-    this->chunk_visible_vertices.erase(id);
-    PRINT_DEBUG("unloaded chunk=" << id);
-    WHEN_DEBUG(std::cout << std::flush);
+Chunk &World::get_chunk(const WorldCoord coords) {
+    return get_chunk(world_coords_to_chunk_id(coords));
 }
