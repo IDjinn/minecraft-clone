@@ -40,9 +40,12 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
 }
 
 void World::check_chunk_lifetimes(glm::vec3 center_position) {
-    WHEN_DEBUG(const auto center_chunk_id = world_coords_to_chunk_id({static_cast<int>(center_position.x),static_cast<int>(center_position.y), static_cast<int>(center_position.z)}));
+    WHEN_DEBUG(
+        const auto center_chunk_id = world_coords_to_chunk_id({static_cast<int>(center_position.x),static_cast<int>(
+            center_position.y), static_cast<int>(center_position.z)}));
     PRINT_DEBUG(
-        "World::check_chunk_lifetimes | id=" << center_chunk_id <<" (x=" << center_position.x<< ", y=" << center_position.y << ", z=" <<
+        "World::check_chunk_lifetimes | id=" << center_chunk_id <<" (x=" << center_position.x<< ", y=" <<
+        center_position.y << ", z=" <<
         center_position.z<<")");
     WHEN_DEBUG(std::cout << std::flush);
 

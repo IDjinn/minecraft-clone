@@ -27,6 +27,7 @@ struct Chunk {
     std::weak_ptr<World> world_ptr;
 
     Chunk(int32_t id, const std::weak_ptr<World> &world_ptr);
+
     ~Chunk();
 
     Chunk(const Chunk &) = delete;
@@ -35,7 +36,9 @@ struct Chunk {
     std::unique_ptr<std::vector<float> > generate_visible_vertices();
 
     [[nodiscard]] const Block *get_block(int x, int y, int z) const;
+
     [[nodiscard]] const Block *get_block(uint8_t index) const;
+
     [[nodiscard]] ChunkState getState() const;
 
     void set_state(ChunkState newState);

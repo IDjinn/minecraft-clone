@@ -33,6 +33,7 @@ struct World : public std::enable_shared_from_this<World>{
     std::unique_ptr<std::vector<float>> generate_visible_vertices();
 
     void check_chunk_lifetimes(glm::vec3 center_position);
+
     void unload_chunk(int32_t id);
 
     [[nodiscard]] bool is_chunk_loaded(int32_t chunk_id);

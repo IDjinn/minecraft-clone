@@ -6,7 +6,7 @@
 
 #include "../World.h"
 
-Chunk::Chunk(const int32_t id, const std::weak_ptr<World> &world_ptr): id(id), world_ptr(world_ptr) {
+Chunk::Chunk(const int32_t id, const std::weak_ptr<World> &world_ptr) : id(id), world_ptr(world_ptr) {
 }
 
 Chunk::~Chunk() {

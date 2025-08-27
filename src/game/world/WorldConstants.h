@@ -25,23 +25,23 @@ struct WorldCoord {
     int32_t x, y, z;
     bool absolute = false;
 
-    bool operator==(const WorldCoord& other) const {
+    bool operator==(const WorldCoord &other) const {
         return this->equals(other);
     }
 
-    bool operator!=(const WorldCoord& other) const {
+    bool operator!=(const WorldCoord &other) const {
         return !this->equals(other);
     }
 
-    [[nodiscard]] bool equals(const WorldCoord& other) const {
+    [[nodiscard]] bool equals(const WorldCoord &other) const {
         return absolute || other.absolute ? this->absolute_equals(other) : this->soft_equals(other);
     }
 
-    [[nodiscard]] bool absolute_equals(const WorldCoord& other) const {
+    [[nodiscard]] bool absolute_equals(const WorldCoord &other) const {
         return x == other.x && y == other.y && z == other.z;
     }
 
-    [[nodiscard]] bool soft_equals(const WorldCoord& other) const {
+    [[nodiscard]] bool soft_equals(const WorldCoord &other) const {
         return (x / CHUNK_SIZE_X == other.x / CHUNK_SIZE_X) &&
                (y / CHUNK_SIZE_Y == other.y / CHUNK_SIZE_Y) &&
                (z / CHUNK_SIZE_Z == other.z / CHUNK_SIZE_Z);
