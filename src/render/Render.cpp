@@ -4,14 +4,17 @@
 
 #include "Render.h"
 
-Render::Render(World &world) : world(world) {
+Render::Render(const std::weak_ptr<World> &current_world) : current_world(current_world) {
     yaw = -90.0f;
     pitch = 0.0f;
     lastX = WIDTH / 2.0f;
     lastY = HEIGHT / 2.0f;
     firstMouse = true;
     mouseEnabled = true;
-    visibleVertices = world.generate_visible_vertices();
+
+    auto world = current_world.lock();
+    if (!world)
+        throw new std::runtime_error("current_world is invalid");
 
     if (!glfwInit()) {
         std::cerr << "failed to init GLFW\n";
@@ -82,19 +85,18 @@ Render::Render(World &world) : world(world) {
 
     DebugGui::setup(window);
 
-    ASSERT_DEBUG(visibleVertices.size() < WORLD_MAX_VERTICES,
-                 "created more vertices than possible in this implementation (something wrong with culling?)");
-    PRINT_DEBUG("Total vertices: " << visibleVertices.size()
-        << " max: " << WORLD_MAX_VERTICES
-        << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
-        << std::endl);
+    // ASSERT_DEBUG(visibleVertices.size() < WORLD_MAX_VERTICES,
+    //              "created more vertices than possible in this implementation (something wrong with culling?)");
+    // PRINT_DEBUG("Total vertices: " << visibleVertices.size()
+    //     << " max: " << WORLD_MAX_VERTICES
+    //     << " culling: " << (static_cast<double>(visibleVertices.size()) / WORLD_MAX_VERTICES * 100.0) << "%"
+    //     << std::endl);
 
     glGenVertexArrays(1, &visibleVAO);
     glGenBuffers(1, &visibleVBO);
 
     glBindVertexArray(visibleVAO);
     glBindBuffer(GL_ARRAY_BUFFER, visibleVBO);
-    glBufferData(GL_ARRAY_BUFFER, visibleVertices.size() * sizeof(float), visibleVertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(0));
     glEnableVertexAttribArray(0);
@@ -109,14 +111,12 @@ Render::Render(World &world) : world(world) {
 void Render::render() {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    const auto world = current_world.lock();
+    if (!world) return;
+
     DebugGui::prepare();
-
-    auto currentFrame = static_cast<float>(glfwGetTime());
-    delta_time = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-
-    auto player = world.players.at(0);
-    player->processInput(window, delta_time);
+    const auto player = world->players.at(0);
 
     glPolygonMode(GL_FRONT_AND_BACK, player->draw_line ? GL_LINE : GL_FILL);
     glUseProgram(shaderProgram);
@@ -124,6 +124,12 @@ void Render::render() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
+
+    const auto currentFrame = static_cast<float>(glfwGetTime());
+    delta_time = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    player->processInput(window, delta_time);
 
     glm::mat4 view = glm::lookAt(player->position, player->position + player->cameraFront, player->cameraUp);
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
@@ -135,11 +141,14 @@ void Render::render() {
     unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    DebugGui::render(this, player);
+    const auto vertices = world->generate_visible_vertices();
+    glBufferData(GL_ARRAY_BUFFER, vertices->size() * sizeof(float), vertices->data(), GL_STATIC_DRAW);
+
     glBindVertexArray(visibleVAO);
-    glDrawArrays(GL_TRIANGLES, 0, visibleVertices.size());
+    glDrawArrays(GL_TRIANGLES, 0, vertices->size());
     glBindVertexArray(0);
 
+    DebugGui::render(this, player);
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
@@ -182,8 +191,11 @@ void Render::mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    auto player = world.players.at(0);
-    player->cameraFront = glm::normalize(direction);
+
+    if (const auto world = current_world.lock()) {
+        const auto player = world->players.at(0);
+        player->cameraFront = glm::normalize(direction);
+    }
 }
 
 void Render::scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {

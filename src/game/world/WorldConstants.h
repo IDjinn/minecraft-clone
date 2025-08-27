@@ -5,8 +5,6 @@
 #ifndef MINECRAFT_WORLDCONSTANTS_H
 #define MINECRAFT_WORLDCONSTANTS_H
 
-#include <glad/glad.h>
-
 #define WORLD_SIZE_X 64
 #define WORLD_SIZE_Y 64
 #define WORLD_SIZE_Z 64
@@ -16,7 +14,7 @@
 #define CHUNK_SIZE_Z 16
 
 #define WORLD_SPAWN_COORDS glm::vec3(1000, 100, 1000)
-#define WORLD_SPAWN_RENDER_CHUNKS 16
+#define WORLD_SPAWN_RENDER_CHUNKS (glm::vec3(5, 1, 5) * (float)CHUNK_SIZE_X)
 #define WORLD_RENDER_VERTICES_RESERVE 300000
 
 
@@ -92,6 +90,6 @@ const int directions[6][3] = {
 (long long)(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z) * \
 CUBE_FACES * 30l)
 
-#define OVERWORLD 0
+#define OVERWORLD 1
 
 #endif //MINECRAFT_WORLDCONSTANTS_H

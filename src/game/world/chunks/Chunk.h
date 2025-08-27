@@ -7,11 +7,11 @@
 #include <array>
 #include <memory>
 
+#include "../World.h"
 #include "../blocks/Block.h"
 #include "../WorldConstants.h"
-#include "../blocks/BlockType.h"
 
-using ChunkId = int32_t;
+struct World;
 
 enum class ChunkState {
     UNKNOWN = 0,
@@ -21,48 +21,34 @@ enum class ChunkState {
 };
 
 struct Chunk {
-    ChunkId id{};
+    int32_t id{};
     std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
     ChunkState state = ChunkState::UNKNOWN;
 
-    Chunk(ChunkId id) : id(id) {
+    std::weak_ptr<World> world_ptr;
+
+    Chunk(const int32_t id, const std::weak_ptr<World> &world_ptr) : id(id), world_ptr(world_ptr) {
     }
+
+    ~Chunk();
 
     Chunk(const Chunk &) = delete;
 
     Chunk &operator=(const Chunk &) = delete;
 
-    [[nodiscard]] const Block *getBlock(const int x, const int y, const int z) const {
-        return getBlock(block_index(x, y, z));
-    }
+    std::unique_ptr<std::vector<float> > generate_visible_vertices();
 
-    [[nodiscard]] const Block *getBlock(const uint8_t index) const {
-        return &blocks[index];
-    }
+    [[nodiscard]] const Block *getBlock(const int x, const int y, const int z) const;
 
-    [[nodiscard]] ChunkState getState() const {
-        return state;
-    }
+    [[nodiscard]] const Block *getBlock(const uint8_t index) const;
 
-    void initializeBlocks() {
-        for (int x = 0; x < CHUNK_SIZE_X; x++) {
-            for (int y = 0; y < CHUNK_SIZE_Y; y++) {
-                for (int z = 0; z < CHUNK_SIZE_Z; z++) {
-                    int index = block_index(x, y, z);
-                    blocks[index].setIndex(index);
-                    blocks[index].setBlockType(BlockType::DIRT);
-                }
-            }
-        }
+    [[nodiscard]] ChunkState getState() const;
 
-        this->setState(ChunkState::INITIALIZED);
-    }
+    void initialize_blocks();
 
-    void setState(const ChunkState newState) {
-        this->state = newState;
-    }
+    void setState(const ChunkState newState);
 
-    void setIndex(uint8_t chunk_index);
+    void set_index(uint8_t chunk_index);
 
     static constexpr uint32_t block_index(const uint32_t x, const uint32_t y, const uint32_t z) {
         return x + CHUNK_SIZE_X * (y + CHUNK_SIZE_Y * z);

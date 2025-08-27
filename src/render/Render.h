@@ -40,10 +40,10 @@ struct Render {
 
     ShaderManager shaderManager{};
     TextureManager textureManager{};
-    World &world;
-    std::vector<float> visibleVertices;
 
-    explicit Render(World &world);
+    std::weak_ptr<World> current_world;
+
+    explicit Render(const std::weak_ptr<World> &current_world);
 
     void render();
 

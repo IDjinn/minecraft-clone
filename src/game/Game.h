@@ -8,20 +8,13 @@
 
 
 struct Game {
-    World world;
-    Render render;
-    std::shared_ptr<Player> player = std::make_shared<
-        Player>(World::generate_entity_id(), "IDjinn", WORLD_SPAWN_COORDS);
+    std::shared_ptr<Player> player;
+    std::shared_ptr<World> world;
+    std::shared_ptr<Render> render;
 
-    Game() : world(OVERWORLD, WORLD_SPAWN_COORDS), render(this->world) {
-        world.add_player(player);
-    }
+    Game();
 
-    void run() {
-        while (render.is_running()) {
-            render.render();
-        }
-    }
+    void run() const;
 };
 
 

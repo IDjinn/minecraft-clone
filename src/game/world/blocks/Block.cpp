@@ -4,6 +4,7 @@
 
 #include "Block.h"
 
+#include "../World.h"
 #include "../WorldConstants.h"
 
 void Block::setIndex(const uint64_t index) {
