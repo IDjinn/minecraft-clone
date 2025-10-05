@@ -20,10 +20,12 @@ struct WorldGeneration {
 
     explicit WorldGeneration(long seed);
 
-    std::unique_ptr<Chunk> load_chunk(const std::weak_ptr<World> &world, int32_t chunk_id);
+    void load_chunk(const std::unique_ptr<Chunk> &chunk);
 
-    std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > > generate_chunks_around(
-        const std::weak_ptr<World> &world, glm::vec3 position);
+    std::unordered_map<int32_t, std::unique_ptr<Chunk> > generate_chunks_around(
+     const std::shared_ptr<World> &world,
+     glm::vec3 position
+ );
 };
 
 

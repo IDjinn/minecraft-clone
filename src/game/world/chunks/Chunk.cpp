@@ -6,18 +6,15 @@
 
 #include "../World.h"
 
-Chunk::Chunk(const int32_t id, const std::weak_ptr<World> &world_ptr) : id(id), world_ptr(world_ptr) {
+Chunk::Chunk(const int32_t id, const std::shared_ptr<World> &world_ptr) : id(id), world(world_ptr) {
 }
 
 Chunk::~Chunk() {
 }
 
-std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
-    auto visibleVertices = std::make_unique<std::vector<float> >();
-    visibleVertices->reserve(WORLD_RENDER_VERTICES_RESERVE);
-
-    auto world = world_ptr.lock();
-    ASSERT_DEBUG(world, "world is invalid");
+std::vector<float> Chunk::generate_visible_vertices() const {
+    std::vector<float> visibleVertices{};
+    visibleVertices.reserve(WORLD_RENDER_VERTICES_RESERVE);
 
     const auto [chunk_x, chunk_y, chunk_z,absolute] = chunk_id_to_world_coordinates(this->id);
     for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -63,7 +60,7 @@ std::unique_ptr<std::vector<float> > Chunk::generate_visible_vertices() {
                         auto vz = faceVertices[face][i + 2] + world_position_current_block.z;
                         auto u = faceVertices[face][i + 3];
                         auto v = faceVertices[face][i + 4];
-                        visibleVertices->insert(visibleVertices->end(), {vx, vy, vz, u, v});
+                        visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});
                     }
                 }
             }

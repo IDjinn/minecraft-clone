@@ -7,33 +7,28 @@
 #include <array>
 #include <memory>
 
+#include "ChunkState.h"
 #include "../World.h"
 #include "../blocks/Block.h"
 #include "../WorldConstants.h"
 
 struct World;
 
-enum class ChunkState {
-    UNKNOWN = 0,
-
-    LOADED = 1,
-    INITIALIZED = 2,
-};
 
 struct Chunk {
     const int32_t id;
     std::array<Block, CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z> blocks{};
     ChunkState state = ChunkState::UNKNOWN;
-    std::weak_ptr<World> world_ptr;
+    std::shared_ptr<World> world;
 
-    Chunk(int32_t id, const std::weak_ptr<World> &world_ptr);
+    Chunk(int32_t id, const std::shared_ptr<World> &world_ptr);
 
     ~Chunk();
 
     Chunk(const Chunk &) = delete;
     Chunk &operator=(const Chunk &) = delete;
 
-    std::unique_ptr<std::vector<float> > generate_visible_vertices();
+    [[nodiscard]] std::vector<float> generate_visible_vertices() const;
 
     [[nodiscard]] const Block *get_block(int x, int y, int z) const;
 

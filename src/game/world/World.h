@@ -6,9 +6,10 @@
 #define MINECRAFT_WORLD_H
 #include <unordered_map>
 #include <vector>
-
+#include <expected>
 #include "glm/vec3.hpp"
 #include "../players/Player.h"
+#include "chunks/ChunkError.h"
 #include "generation/WorldGeneration.h"
 struct WorldGeneration;
 struct Player;
@@ -21,10 +22,12 @@ struct World : public std::enable_shared_from_this<World>{
     glm::vec3 spawn_point;
     std::vector<std::shared_ptr<Player>> players;
     std::unordered_map<int32_t, std::unique_ptr<Chunk>> chunks{};
-    std::unordered_map<int32_t, std::unique_ptr<std::vector<float>>> chunk_visible_vertices{};
+    std::unordered_map<int32_t, std::vector<float>> chunk_visible_vertices{};
     std::unique_ptr<WorldGeneration> world_generation;
 
     World(uint8_t id, const glm::vec3 &spawn_point);
+
+    ~World();
 
     void add_player(const std::shared_ptr<Player> &player);
 
@@ -38,9 +41,9 @@ struct World : public std::enable_shared_from_this<World>{
 
     [[nodiscard]] bool is_chunk_loaded(int32_t chunk_id);
 
-    [[nodiscard]] Chunk &get_chunk(int32_t chunk_id);
-    [[nodiscard]] Chunk &get_chunk(WorldCoord coords);
+    [[nodiscard]] std::expected<std::reference_wrapper<Chunk>, ChunkError> get_chunk(WorldCoord coords);
 
+    std::expected<std::reference_wrapper<Chunk>, ChunkError> get_chunk(int32_t chunk_id);
 };
 
 

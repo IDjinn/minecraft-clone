@@ -14,9 +14,8 @@ WorldGeneration::WorldGeneration(const long seed) : seed(seed) {
     heightMap = std::vector<float>(CHUNK_SIZE_X * CHUNK_SIZE_Y);
 }
 
-std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &world, int32_t chunk_id) {
-    auto chunk = std::make_unique<Chunk>(chunk_id, world);
-    auto [chunkX, chunkY, chunkZ, absolute] = chunk_id_to_world_coordinates(chunk_id);
+void WorldGeneration::load_chunk(const std::unique_ptr<Chunk>& chunk) {
+    auto [chunkX, chunkY, chunkZ, absolute] = chunk_id_to_world_coordinates(chunk->id);
     fnGenerator->GenUniformGrid2D(
         heightMap.data(),
         chunkX * CHUNK_SIZE_X,
@@ -55,12 +54,11 @@ std::unique_ptr<Chunk> WorldGeneration::load_chunk(const std::weak_ptr<World> &w
     }
 
     chunk->set_state(ChunkState::INITIALIZED);
-    return chunk;
 }
 
-std::unique_ptr<std::unordered_map<int32_t, std::unique_ptr<Chunk> > >
+std::unordered_map<int32_t, std::unique_ptr<Chunk> >
 WorldGeneration::generate_chunks_around(
-    const std::weak_ptr<World> &world,
+    const std::shared_ptr<World> &world,
     glm::vec3 position
 ) {
     const auto world_min_boundary = position - WORLD_RENDER_DISTANCE_BLOCKS;
@@ -73,13 +71,14 @@ WorldGeneration::generate_chunks_around(
     const auto maxX = static_cast<int>(world_max_boundary.x);
     const auto maxY = static_cast<int>(world_max_boundary.y);
     const auto maxZ = static_cast<int>(world_max_boundary.z);
-    auto chunks = std::unordered_map<int32_t, std::unique_ptr<Chunk> >{};
+    std::unordered_map<int32_t, std::unique_ptr<Chunk> > chunks{};
 
     for (auto y = minY; y < maxY; y += CHUNK_SIZE_Y) {
         for (auto x = minX; x < maxX; x += CHUNK_SIZE_X) {
             for (auto z = minZ; z < maxZ; z += CHUNK_SIZE_Z) {
                 const auto chunk_id = world_coords_to_chunk_id({x, y, z});
-                chunks[chunk_id] = load_chunk(world, chunk_id);
+                chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, world);
+                load_chunk(chunks[chunk_id]);
 
 #if MINECRAFT_DEBUG
                 auto [world_x, world_y, world_z, absolute] = chunk_id_to_world_coordinates(chunk_id);
@@ -94,5 +93,5 @@ WorldGeneration::generate_chunks_around(
             }
         }
     }
-    return std::make_unique<std::unordered_map<int32_t, std::unique_ptr<Chunk> > >(std::move(chunks));
+    return chunks;
 }

@@ -12,9 +12,9 @@ Render::Render(const std::weak_ptr<World> &current_world) : current_world(curren
     firstMouse = true;
     mouseEnabled = true;
 
-    auto world = current_world.lock();
+    const auto world = current_world.lock();
     if (!world)
-        throw new std::runtime_error("current_world is invalid");
+        throw std::runtime_error("current_world is invalid");
 
     if (!glfwInit()) {
         std::cerr << "failed to init GLFW\n";
@@ -135,10 +135,10 @@ void Render::render() {
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
                                             static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 1000.0f);
 
-    unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+    const unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-    unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
+    const unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     const auto vertices = world->generate_visible_vertices();
@@ -175,7 +175,7 @@ void Render::mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.1f;
+    const float sensitivity = 0.1f;
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 

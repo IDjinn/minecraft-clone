@@ -18,6 +18,10 @@ World::World(const uint8_t id, const glm::vec3 &spawn_point) : id(id),
                                                                    std::make_unique<WorldGeneration>(1234l)) {
 }
 
+World::~World() {
+    DEBUG_BREAK();
+}
+
 void World::add_player(const std::shared_ptr<Player> &player) {
     PRINT_DEBUG(
         "player " << player->name << "(" << player->id << ") added in (" << player->position.x << ", " << player->
@@ -34,7 +38,7 @@ uint32_t World::generate_entity_id() {
 std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
     auto vertices = std::make_unique<std::vector<float> >();
     for (auto &[chunk_id, chunk_vertices]: this->chunk_visible_vertices) {
-        vertices->insert(vertices->end(), chunk_vertices->begin(), chunk_vertices->end());
+        vertices->insert(vertices->end(), chunk_vertices.begin(), chunk_vertices.end());
     }
     return vertices;
 }
@@ -53,17 +57,17 @@ void World::check_chunk_lifetimes(glm::vec3 center_position) {
     auto visible_chunks = world_generation->generate_chunks_around(
         this->shared_from_this(), center_position);
 
-    for (auto &[chunk_id, chunk]: *visible_chunks) {
+    for (auto &[chunk_id, chunk]: visible_chunks) {
         this->chunks[chunk_id] = std::move(chunk);
     }
 
     for (auto &[chunk_id, chunk]: this->chunks) {
-        if (visible_chunks->find(chunk_id) == visible_chunks->end()) {
+        if (!visible_chunks.contains(chunk_id)) {
             chunks_to_unload.insert(chunk_id);
             continue;
         }
 
-        this->chunk_visible_vertices[chunk_id] = chunk->generate_visible_vertices();
+        this->chunk_visible_vertices.insert_or_assign(chunk_id, chunk->generate_visible_vertices());
     }
 
     for (const auto chunk_id_to_unload: chunks_to_unload) {
@@ -82,12 +86,14 @@ bool World::is_chunk_loaded(int32_t chunk_id) {
     return chunks.find(chunk_id) != chunks.end();
 }
 
-Chunk &World::get_chunk(int32_t chunk_id) {
-    auto it = chunks.find(chunk_id);
-    ASSERT(it != chunks.end(), "Chunk was not found/loaded");
+std::expected<std::reference_wrapper<Chunk>, ChunkError> World::get_chunk(int32_t chunk_id) {
+    const auto it = chunks.find(chunk_id);
+    if (it == chunks.end())
+        return std::unexpected(ChunkError::NOT_FOUND);
+
     return *it->second;
 }
 
-Chunk &World::get_chunk(const WorldCoord coords) {
+std::expected<std::reference_wrapper<Chunk>, ChunkError> World::get_chunk(const WorldCoord coords) {
     return get_chunk(world_coords_to_chunk_id(coords));
 }
