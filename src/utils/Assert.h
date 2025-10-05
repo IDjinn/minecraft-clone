@@ -55,7 +55,7 @@ std::abort(); \
 
 
 #if MINECRAFT_DEBUG
-#define WHEN_DEBUG(code) code
+// #define WHEN_DEBUG(code) code
 #define ASSERT_DEBUG(condition, message) ASSERT(condition, message)
 #define PRINT_DEBUG_IF(condition, msg) if (condition) { PRINT_DEBUG(msg); }
 #define PRINT_DEBUG(msg) do { \

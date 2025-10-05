@@ -14,8 +14,7 @@ Game::Game() : player(std::make_shared<Player>(World::generate_entity_id(), "IDj
 }
 
 void Game::run() const {
-    PRINT_DEBUG("game is loaded. init rendering!");
-    WHEN_DEBUG(std::cout<<std::flush);
+    PRINT_DEBUG("game is loaded. init rendering!"<<std::flush);
     while (render->is_running()) {
         render->render();
     }

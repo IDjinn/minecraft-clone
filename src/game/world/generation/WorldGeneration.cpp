@@ -14,7 +14,7 @@ WorldGeneration::WorldGeneration(const long seed) : seed(seed) {
     heightMap = std::vector<float>(CHUNK_SIZE_X * CHUNK_SIZE_Y);
 }
 
-void WorldGeneration::load_chunk(const std::unique_ptr<Chunk>& chunk) {
+void WorldGeneration::load_chunk(const std::unique_ptr<Chunk> &chunk) {
     auto [chunkX, chunkY, chunkZ, absolute] = chunk_id_to_world_coordinates(chunk->id);
     fnGenerator->GenUniformGrid2D(
         heightMap.data(),
@@ -56,13 +56,9 @@ void WorldGeneration::load_chunk(const std::unique_ptr<Chunk>& chunk) {
     chunk->set_state(ChunkState::INITIALIZED);
 }
 
-std::unordered_map<int32_t, std::unique_ptr<Chunk> >
-WorldGeneration::generate_chunks_around(
-    const std::shared_ptr<World> &world,
-    glm::vec3 position
-) {
-    const auto world_min_boundary = position - WORLD_RENDER_DISTANCE_BLOCKS;
-    const auto world_max_boundary = position + WORLD_RENDER_DISTANCE_BLOCKS;
+std::unordered_set<int32_t> WorldGeneration::chunks_around(const glm::vec3 position, const glm::vec3 render_distance) {
+    const auto world_min_boundary = position - render_distance;
+    const auto world_max_boundary = position + render_distance;
 
     const auto minX = std::max(static_cast<int>(world_min_boundary.x), 0);
     const auto minY = std::max(static_cast<int>(world_min_boundary.y), 0);
@@ -71,27 +67,36 @@ WorldGeneration::generate_chunks_around(
     const auto maxX = static_cast<int>(world_max_boundary.x);
     const auto maxY = static_cast<int>(world_max_boundary.y);
     const auto maxZ = static_cast<int>(world_max_boundary.z);
-    std::unordered_map<int32_t, std::unique_ptr<Chunk> > chunks{};
+    std::unordered_set<int32_t> chunks{};
 
     for (auto y = minY; y < maxY; y += CHUNK_SIZE_Y) {
         for (auto x = minX; x < maxX; x += CHUNK_SIZE_X) {
             for (auto z = minZ; z < maxZ; z += CHUNK_SIZE_Z) {
-                const auto chunk_id = world_coords_to_chunk_id({x, y, z});
-                chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, world);
-                load_chunk(chunks[chunk_id]);
-
-#if MINECRAFT_DEBUG
-                auto [world_x, world_y, world_z, absolute] = chunk_id_to_world_coordinates(chunk_id);
-                PRINT_DEBUG_IF(WORLD_DEBUG_FLAG,
-                               "loaded chunk=" << chunk_id <<" at x=" << x << " y=" << y << " z=" << z << " (" <<
-                               world_x <<
-                               ", "
-                               << world_y << ", " << world_z<<" a="<<absolute<<")"
-                );
-                WHEN_DEBUG(std::cout << std::flush);
-#endif
+                chunks.emplace(world_coords_to_chunk_id({x, y, z}));
             }
         }
     }
+
+    return chunks;
+}
+
+std::unordered_map<int32_t, std::unique_ptr<Chunk> >
+WorldGeneration::load_chunks(
+    const std::shared_ptr<World> &world,
+    const std::vector<int32_t> &chunk_ids
+) {
+    std::unordered_map<int32_t, std::unique_ptr<Chunk> > chunks{};
+    for (const auto chunk_id: chunk_ids) {
+        chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, world);
+        load_chunk(chunks[chunk_id]);
+
+#if MINECRAFT_DEBUG
+        auto [world_x, world_y, world_z, absolute] = chunk_id_to_world_coordinates(chunk_id);
+        PRINT_DEBUG_IF(WORLD_DEBUG_FLAG,
+                       "loaded chunk=" << chunk_id <<" (" <<world_x << ", " << world_y << ", " << world_z<<" a="<<
+                       absolute<<")" << std::flush);
+#endif
+    }
+
     return chunks;
 }

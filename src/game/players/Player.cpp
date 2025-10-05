@@ -15,8 +15,10 @@ void Player::on_enter_new_chunk(const int32_t chunk_id) const {
     PRINT_DEBUG("player was enter in chunk " << chunk_id);
     if (const auto world = this->current_world.lock()) {
         world->check_chunk_lifetimes(position);
-        WHEN_DEBUG(auto& new_chunk = world->chunk_visible_vertices.find(chunk_id)->second);
-        ASSERT_DEBUG(world->chunk_visible_vertices.count(chunk_id) > 0, "new chunk is not loaded");
+#ifdef MINECRAFT_DEBUG
+        auto &new_chunk = world->chunk_visible_vertices.find(chunk_id)->second;
+        ASSERT_DEBUG(world->chunk_visible_vertices.contains(chunk_id), "new chunk is not loaded");
+#endif
     }
 }
 

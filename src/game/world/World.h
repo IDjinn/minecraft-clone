@@ -22,7 +22,7 @@ struct World : public std::enable_shared_from_this<World>{
     glm::vec3 spawn_point;
     std::vector<std::shared_ptr<Player>> players;
     std::unordered_map<int32_t, std::unique_ptr<Chunk>> chunks{};
-    std::unordered_map<int32_t, std::vector<float>> chunk_visible_vertices{};
+,    std::unordered_map<int32_t, std::vector<float> > chunk_visible_vertices{};
     std::unique_ptr<WorldGeneration> world_generation;
 
     World(uint8_t id, const glm::vec3 &spawn_point);

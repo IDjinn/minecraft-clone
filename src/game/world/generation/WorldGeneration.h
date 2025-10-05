@@ -16,16 +16,18 @@ struct World;
 struct WorldGeneration {
     std::vector<float> heightMap;
     FastNoise::SmartNode<FastNoise::Simplex> fnGenerator;
+    std::mutex generator_mutex;
     long seed;
 
     explicit WorldGeneration(long seed);
 
     void load_chunk(const std::unique_ptr<Chunk> &chunk);
 
-    std::unordered_map<int32_t, std::unique_ptr<Chunk> > generate_chunks_around(
-     const std::shared_ptr<World> &world,
-     glm::vec3 position
- );
+    static std::unordered_set<int32_t> chunks_around(glm::vec3 position, glm::vec3 render_distance);
+
+    std::unordered_map<int32_t, std::unique_ptr<Chunk> > load_chunks(
+        const std::shared_ptr<World> &world, const std::vector<int32_t> &chunk_ids
+    );
 };
 
 

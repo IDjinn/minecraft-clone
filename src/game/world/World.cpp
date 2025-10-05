@@ -25,8 +25,7 @@ World::~World() {
 void World::add_player(const std::shared_ptr<Player> &player) {
     PRINT_DEBUG(
         "player " << player->name << "(" << player->id << ") added in (" << player->position.x << ", " << player->
-        position.y << ", " << player->position.z << ")");
-    WHEN_DEBUG(std::cout << std::flush);
+        position.y << ", " << player->position.z << ")" << std::flush);
     players.push_back(player);
 }
 
@@ -44,20 +43,31 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
 }
 
 void World::check_chunk_lifetimes(glm::vec3 center_position) {
-    WHEN_DEBUG(
-        const auto center_chunk_id = world_coords_to_chunk_id({static_cast<int>(center_position.x),static_cast<int>(
-            center_position.y), static_cast<int>(center_position.z)}));
-    PRINT_DEBUG(
-        "World::check_chunk_lifetimes | id=" << center_chunk_id <<" (x=" << center_position.x<< ", y=" <<
+#ifdef MINECRAFT_DEBUG
+    const auto center_chunk_id = world_coords_to_chunk_id({
+        static_cast<int>(center_position.x), static_cast<int>(
+            center_position.y),
+        static_cast<int>(center_position.z)
+    });
+
+    PRINT_DEBUG("World::check_chunk_lifetimes | id=" << center_chunk_id << " (x=" << center_position.x << ", y=" <<
         center_position.y << ", z=" <<
-        center_position.z<<")");
-    WHEN_DEBUG(std::cout << std::flush);
+        center_position.z << ")"
+        << std::flush);
+#endif
 
     std::unordered_set<int32_t> chunks_to_unload{};
-    auto visible_chunks = world_generation->generate_chunks_around(
-        this->shared_from_this(), center_position);
+    auto chunks_to_load =std::vector<int32_t> {};
+    const auto visible_chunks = world_generation->chunks_around(center_position, WORLD_RENDER_DISTANCE_BLOCKS);
+    for (const auto visible_chunk: visible_chunks) {
+        if (this->chunks.contains(visible_chunk))
+            continue;
 
-    for (auto &[chunk_id, chunk]: visible_chunks) {
+        chunks_to_load.push_back(visible_chunk);
+    }
+
+    auto loaded_chunks = world_generation->load_chunks(this->shared_from_this(), chunks_to_load);
+    for (auto &[chunk_id, chunk]: loaded_chunks) {
         this->chunks[chunk_id] = std::move(chunk);
     }
 
@@ -78,8 +88,7 @@ void World::check_chunk_lifetimes(glm::vec3 center_position) {
 void World::unload_chunk(const int32_t id) {
     this->chunks.erase(id);
     this->chunk_visible_vertices.erase(id);
-    PRINT_DEBUG_IF(WORLD_DEBUG_FLAG, "unloaded chunk=" << id);
-    WHEN_DEBUG(std::cout << std::flush);
+    PRINT_DEBUG_IF(WORLD_DEBUG_FLAG, "unloaded chunk=" << id << std::flush);
 }
 
 bool World::is_chunk_loaded(int32_t chunk_id) {
