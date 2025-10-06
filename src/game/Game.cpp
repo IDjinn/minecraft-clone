@@ -29,17 +29,17 @@ void Game::run() const {
 void Game::runPhysics() const {
     if (this->world->pending_chunks.empty())return;
 
-    for (auto it = this->world->pending_chunks.begin();
-         it != this->world->pending_chunks.end();) {
-        if (it->second.wait_for(std::chrono::milliseconds(0)) ==
-            std::future_status::ready) {
-            int32_t chunk_id = it->first;
+    std::unordered_set<int32_t> pending_to_remove{};
+    pending_to_remove.reserve(this->world->pending_chunks.size());
+    for (auto &[chunk_id, future]: this->world->pending_chunks) {
+        if (future.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready) continue;
 
-            auto chunk = it->second.get();
-            this->world->chunks[chunk_id] = std::move(chunk);
-            it = this->world->pending_chunks.erase(it);
-        } else {
-            ++it;
-        }
+        auto chunk = future.get();
+        this->world->chunks[chunk_id] = std::move(chunk);
+        pending_to_remove.insert(chunk_id);
+    }
+
+    for (auto chunk_id: pending_to_remove) {
+        this->world->pending_chunks.erase(chunk_id);
     }
 }

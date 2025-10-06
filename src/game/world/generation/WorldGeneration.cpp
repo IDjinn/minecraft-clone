@@ -91,7 +91,7 @@ WorldGeneration::load_chunks_async(
         chunks[chunk_id] = std::async(std::launch::async, [this, chunk_id, world] {
             auto chunk = std::make_unique<Chunk>(chunk_id, world);
             load_chunk(chunk);
-            world->chunk_visible_vertices[chunk_id] = chunk->generate_visible_vertices();
+            world->chunk_visible_vertices[chunk_id] = chunk->generate_mesh();
             return chunk;
         });
     }

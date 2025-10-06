@@ -97,7 +97,7 @@ void World::check_chunk_lifetimes(glm::vec3 center_position) {
             continue;
         }
 
-        this->chunk_visible_vertices.insert_or_assign(chunk_id, chunk->generate_visible_vertices());
+        this->chunk_visible_vertices.insert_or_assign(chunk_id, chunk->generate_mesh());
     }
 }
 

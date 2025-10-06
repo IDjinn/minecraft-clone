@@ -26,9 +26,10 @@ struct Chunk {
     ~Chunk();
 
     Chunk(const Chunk &) = delete;
+
     Chunk &operator=(const Chunk &) = delete;
 
-    [[nodiscard]] std::vector<float> generate_visible_vertices() const;
+    [[nodiscard]] std::vector<float> generate_mesh() const;
 
     [[nodiscard]] const Block *get_block(int x, int y, int z) const;
 
