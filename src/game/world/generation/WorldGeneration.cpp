@@ -56,7 +56,8 @@ void WorldGeneration::load_chunk(const std::unique_ptr<Chunk> &chunk) {
     chunk->set_state(ChunkState::INITIALIZED);
 }
 
-std::unordered_set<int32_t> WorldGeneration::chunks_around(const glm::vec3 position, const glm::vec3 render_distance) {
+std::unordered_set<int32_t> WorldGeneration::chunk_ids_around_position(const glm::vec3 position,
+                                                                       const glm::vec3 render_distance) {
     const auto world_min_boundary = position - render_distance;
     const auto world_max_boundary = position + render_distance;
 
@@ -80,23 +81,19 @@ std::unordered_set<int32_t> WorldGeneration::chunks_around(const glm::vec3 posit
     return chunks;
 }
 
-std::unordered_map<int32_t, std::unique_ptr<Chunk> >
-WorldGeneration::load_chunks(
+std::unordered_map<int32_t, std::future<std::unique_ptr<Chunk> > >
+WorldGeneration::load_chunks_async(
     const std::shared_ptr<World> &world,
     const std::vector<int32_t> &chunk_ids
 ) {
-    std::unordered_map<int32_t, std::unique_ptr<Chunk> > chunks{};
+    std::unordered_map<int32_t, std::future<std::unique_ptr<Chunk> > > chunks{};
     for (const auto chunk_id: chunk_ids) {
-        chunks[chunk_id] = std::make_unique<Chunk>(chunk_id, world);
-        load_chunk(chunks[chunk_id]);
-
-#if MINECRAFT_DEBUG
-        auto [world_x, world_y, world_z, absolute] = chunk_id_to_world_coordinates(chunk_id);
-        PRINT_DEBUG_IF(WORLD_DEBUG_FLAG,
-                       "loaded chunk=" << chunk_id <<" (" <<world_x << ", " << world_y << ", " << world_z<<" a="<<
-                       absolute<<")" << std::flush);
-#endif
+        chunks[chunk_id] = std::async(std::launch::async, [this, chunk_id, world] {
+            auto chunk = std::make_unique<Chunk>(chunk_id, world);
+            load_chunk(chunk);
+            world->chunk_visible_vertices[chunk_id] = chunk->generate_visible_vertices();
+            return chunk;
+        });
     }
-
     return chunks;
 }

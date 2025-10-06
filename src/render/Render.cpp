@@ -108,7 +108,7 @@ Render::Render(const std::weak_ptr<World> &current_world) : current_world(curren
     glEnable(GL_DEPTH_TEST);
 }
 
-void Render::render() {
+void Render::runRender() {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

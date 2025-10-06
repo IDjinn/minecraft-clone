@@ -45,7 +45,7 @@ struct Render {
 
     explicit Render(const std::weak_ptr<World> &current_world);
 
-    void render();
+    void runRender();
 
     ~Render();
 

@@ -42,46 +42,62 @@ std::unique_ptr<std::vector<float> > World::generate_visible_vertices() {
     return vertices;
 }
 
-void World::check_chunk_lifetimes(glm::vec3 center_position) {
+std::vector<int32_t> World::get_visible_chunk_ids(glm::vec3 center_position) {
+}
+
+void World::unload_chunks(const std::vector<int32_t> &chunk_ids) {
+    for (const auto chunk_id_to_unload: chunk_ids) {
+        unload_chunk(chunk_id_to_unload);
+    }
+}
+
 #ifdef MINECRAFT_DEBUG
+void print_chunk_lifetime_info(const glm::vec3 &center_position) {
     const auto center_chunk_id = world_coords_to_chunk_id({
-        static_cast<int>(center_position.x), static_cast<int>(
-            center_position.y),
+        static_cast<int>(center_position.x),
+        static_cast<int>(center_position.y),
         static_cast<int>(center_position.z)
     });
 
-    PRINT_DEBUG("World::check_chunk_lifetimes | id=" << center_chunk_id << " (x=" << center_position.x << ", y=" <<
-        center_position.y << ", z=" <<
-        center_position.z << ")"
-        << std::flush);
+    PRINT_DEBUG("World::check_chunk_lifetimes | id=" << center_chunk_id << " ("
+                << "x=" << center_position.x << ", "
+                << "y=" << center_position.y << ", "
+                << "z=" << center_position.z << ")"
+                << std::flush);
+}
 #endif
 
-    std::unordered_set<int32_t> chunks_to_unload{};
-    auto chunks_to_load =std::vector<int32_t> {};
-    const auto visible_chunks = world_generation->chunks_around(center_position, WORLD_RENDER_DISTANCE_BLOCKS);
-    for (const auto visible_chunk: visible_chunks) {
-        if (this->chunks.contains(visible_chunk))
+
+void World::check_chunk_lifetimes(glm::vec3 center_position) {
+#ifdef MINECRAFT_DEBUG
+    print_chunk_lifetime_info(center_position);
+#endif
+
+    auto chunks_to_load = std::vector<int32_t>{};
+    const auto visible_chunks_ids = WorldGeneration::chunk_ids_around_position(
+        center_position,
+        WORLD_RENDER_DISTANCE_BLOCKS
+    );
+    for (const auto chunk_id: visible_chunks_ids) {
+        if (this->chunks.contains(chunk_id))
             continue;
 
-        chunks_to_load.push_back(visible_chunk);
+        chunks_to_load.push_back(chunk_id);
     }
 
-    auto loaded_chunks = world_generation->load_chunks(this->shared_from_this(), chunks_to_load);
-    for (auto &[chunk_id, chunk]: loaded_chunks) {
-        this->chunks[chunk_id] = std::move(chunk);
+    std::unordered_set<int32_t> chunks_to_unload{};
+    auto pending_loading_chunks = world_generation->load_chunks_async(this->shared_from_this(), chunks_to_load);
+    for (auto &[chunk_id, future]: pending_loading_chunks) {
+        this->pending_chunks[chunk_id] = std::move(future);
     }
 
     for (auto &[chunk_id, chunk]: this->chunks) {
-        if (!visible_chunks.contains(chunk_id)) {
+        if (!visible_chunks_ids.contains(chunk_id)) {
             chunks_to_unload.insert(chunk_id);
             continue;
         }
 
         this->chunk_visible_vertices.insert_or_assign(chunk_id, chunk->generate_visible_vertices());
-    }
-
-    for (const auto chunk_id_to_unload: chunks_to_unload) {
-        unload_chunk(chunk_id_to_unload);
     }
 }
 

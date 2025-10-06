@@ -31,6 +31,7 @@ add_library(minecraft_lib
         src/game/Game.h
         src/game/world/generation/WorldGeneration.cpp
         src/game/world/generation/WorldGeneration.h
+        src/utils/PerformanceTimer.h
 )
 
 add_executable(minecraft src/main.cpp)

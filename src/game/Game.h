@@ -4,6 +4,8 @@
 
 #ifndef MINECRAFT_GAME_H
 #define MINECRAFT_GAME_H
+#include <atomic>
+
 #include "../render/Render.h"
 
 
@@ -12,9 +14,14 @@ struct Game {
     std::shared_ptr<World> world;
     std::shared_ptr<Render> render;
 
+    std::atomic<bool> running;
+
     Game();
 
     void run() const;
+
+private:
+    void runPhysics() const;
 };
 
 
