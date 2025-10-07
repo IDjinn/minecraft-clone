@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(minecraft_tests
         test_main.cpp
         test_coordinates.cpp
+        test_chunk_mesh.cpp
 )
 
 target_link_libraries(minecraft_tests

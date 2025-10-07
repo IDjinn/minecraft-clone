@@ -12,7 +12,7 @@ Chunk::Chunk(const int32_t id, const std::shared_ptr<World> &world_ptr) : id(id)
 Chunk::~Chunk() {
 }
 
-std::vector<float> Chunk::generate_mesh() const {
+std::vector<float> Chunk::generate_mesh(const bool ignore_neighbors) const {
     std::vector<float> visibleVertices{};
     visibleVertices.reserve(WORLD_RENDER_VERTICES_RESERVE);
 
@@ -20,7 +20,14 @@ std::vector<float> Chunk::generate_mesh() const {
     for (auto y = 0; y < CHUNK_SIZE_Y; y++) {
         for (auto x = 0; x < CHUNK_SIZE_X; x++) {
             for (auto z = 0; z < CHUNK_SIZE_Z; z++) {
+                const auto chunk_coords = glm::vec3(chunk_x, chunk_y, chunk_z);
                 const auto index = Chunk::block_index(x, y, z);
+                const auto chunk_out_of_range = chunk_coords.x > WORLD_SPAWN_COORDS.x + WORLD_FAR_LANDS.x ||
+                                                chunk_coords.x < WORLD_SPAWN_COORDS.x - WORLD_FAR_LANDS.x ||
+                                                chunk_coords.z > WORLD_SPAWN_COORDS.z + WORLD_FAR_LANDS.z ||
+                                                chunk_coords.z < WORLD_SPAWN_COORDS.z - WORLD_FAR_LANDS.z;
+                if (chunk_out_of_range) continue;
+
                 if (auto &block = this->blocks[index]; block.block_type() == BlockType::AIR) continue;
 
                 for (auto face = 0; face < 6; ++face) {
@@ -30,12 +37,13 @@ std::vector<float> Chunk::generate_mesh() const {
 
                     auto neighborIsSolid = false;
                     const auto world_position_current_block = glm::vec3(chunk_x + x, chunk_y + y, chunk_z + z);
+
                     if (nx >= 0 && nx < CHUNK_SIZE_X &&
                         ny >= 0 && ny < CHUNK_SIZE_Y &&
                         nz >= 0 && nz < CHUNK_SIZE_Z) {
                         const auto neighbor_block_index = Chunk::block_index(nx, ny, nz);
                         neighborIsSolid = this->blocks[neighbor_block_index].block_type() != BlockType::AIR;
-                    } else {
+                    } else if (!ignore_neighbors) {
                         const auto neighbor_x = x + directions[face][0];
                         const auto neighbor_y = y + directions[face][1];
                         const auto neighbor_z = z + directions[face][2];
@@ -43,8 +51,8 @@ std::vector<float> Chunk::generate_mesh() const {
                             {chunk_x + neighbor_x, chunk_y + neighbor_y, chunk_z + neighbor_z}
                         );
 
-                        if (auto it = world->chunks.find(neighbor_chunk_id); it != world->chunks.end()) {
-                            const auto &neighbor_chunk = it->second;
+                        if (world->chunks.contains(neighbor_chunk_id)) {
+                            const auto &neighbor_chunk = world->chunks[neighbor_chunk_id];
                             const auto neighbor_block_x = get_wrapped_coord(neighbor_x, CHUNK_SIZE_X);
                             const auto neighbor_block_y = get_wrapped_coord(neighbor_y, CHUNK_SIZE_Y);
                             const auto neighbor_block_z = get_wrapped_coord(neighbor_z, CHUNK_SIZE_Z);
@@ -55,10 +63,13 @@ std::vector<float> Chunk::generate_mesh() const {
                     }
 
                     if (neighborIsSolid) continue;
+
                     for (int i = 0; i < 30; i += 5) {
                         auto vx = faceVertices[face][i] + world_position_current_block.x;
                         auto vy = faceVertices[face][i + 1] + world_position_current_block.y;
                         auto vz = faceVertices[face][i + 2] + world_position_current_block.z;
+
+
                         auto u = faceVertices[face][i + 3];
                         auto v = faceVertices[face][i + 4];
                         visibleVertices.insert(visibleVertices.end(), {vx, vy, vz, u, v});

@@ -29,7 +29,7 @@ struct Chunk {
 
     Chunk &operator=(const Chunk &) = delete;
 
-    [[nodiscard]] std::vector<float> generate_mesh() const;
+    [[nodiscard]] std::vector<float> generate_mesh(bool ignore_neighbors) const;
 
     [[nodiscard]] const Block *get_block(int x, int y, int z) const;
 

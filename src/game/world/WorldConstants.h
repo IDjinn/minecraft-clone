@@ -12,10 +12,12 @@
 #define CHUNK_SIZE_X 16
 #define CHUNK_SIZE_Y 16
 #define CHUNK_SIZE_Z 16
+#include "glm/vec3.hpp"
 
 
-#define WORLD_SPAWN_COORDS glm::vec3(1000, 100, 1000)
-#define WORLD_RENDER_DISTANCE_BLOCKS (glm::vec3(5, 2, 5) * (float)CHUNK_SIZE_X)
+constexpr auto WORLD_FAR_LANDS = glm::vec3(100, 100, 100);
+constexpr auto WORLD_SPAWN_COORDS = glm::vec3(1000, 100, 1000);
+constexpr auto WORLD_RENDER_DISTANCE_BLOCKS = (glm::vec3(5, 2, 5) * static_cast<float>(CHUNK_SIZE_X));
 #define WORLD_RENDER_VERTICES_RESERVE 300000
 
 #define WORLD_TERRAIN_MAX_HEIGHT 120
